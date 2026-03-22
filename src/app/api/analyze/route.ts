@@ -3,7 +3,7 @@ import { AnalysisResult, AnalysisMode, AudioMetadata } from '@/lib/types';
 import { mockAnalysisResult } from '@/lib/mock-data';
 import { buildAnalysisPrompt } from '@/lib/prompts/builder';
 import { getReferenceProfiles, formatProfilesForPrompt } from '@/lib/reference-profiles';
-import { extractTextFeatures, extractAudioFeatures } from '@/lib/features';
+import { extractTextFeatures, extractAudioFeatures, extractTDAHSubtypeFeatures } from '@/lib/features';
 
 export async function POST(request: Request) {
   try {
@@ -55,9 +55,11 @@ export async function POST(request: Request) {
     }
 
     // Extract objective features algorithmically
+    const parsedAudioMetadata = audioMetadata as AudioMetadata | undefined;
     const textFeatures = extractTextFeatures(transcription, referenceText || undefined);
-    const audioFeatures = audioMetadata ? extractAudioFeatures(audioMetadata as AudioMetadata) : {};
-    const extractedFeatures = { ...textFeatures, ...audioFeatures } as Record<string, number | null>;
+    const audioFeatures = parsedAudioMetadata ? extractAudioFeatures(parsedAudioMetadata) : {};
+    const tdahSubtypeFeatures = extractTDAHSubtypeFeatures(transcription, parsedAudioMetadata);
+    const extractedFeatures = { ...textFeatures, ...audioFeatures, ...tdahSubtypeFeatures } as Record<string, number | null>;
 
     // Load reference profiles from labeled ULIS students
     let referenceProfilesText = '';
@@ -76,7 +78,7 @@ export async function POST(request: Request) {
       transcription,
       referenceText,
       hasImage: !!imageBlock,
-      audioMetadata: audioMetadata as AudioMetadata | undefined,
+      audioMetadata: parsedAudioMetadata,
       studentAge,
       topic,
       questions,
@@ -140,6 +142,9 @@ export async function POST(request: Request) {
       referenceText,
       audioMetadata,
       disorderScreening: analysisOutput.disorderScreening,
+      ...(analysisOutput.tdahDominantSubtype != null && {
+        tdahDominantSubtype: analysisOutput.tdahDominantSubtype,
+      }),
     };
 
     return NextResponse.json<AnalysisResult>(result);

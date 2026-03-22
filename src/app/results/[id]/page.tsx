@@ -87,6 +87,56 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
   const modeConfig = ANALYSIS_MODES.find(m => m.id === data.analysisMode);
   const hasScreening = data.disorderScreening && Object.keys(data.disorderScreening).length > 0;
 
+  // TDAH 3-subtype logic (Pan et al., JAMA Psychiatry 2026)
+  const tdahMarkers = (data.markers || []).filter(m => m.category === 'TDAH');
+  const emotionnelScore = tdahMarkers.find(m => m.subcategory === 'emotionnel')?.score ?? 0;
+  const impulsifScore = tdahMarkers.find(m => m.subcategory === 'impulsif')?.score ?? 0;
+  const inattentifScore = tdahMarkers.find(m => m.subcategory === 'inattentif')?.score ?? 0;
+  const hasTdahSubtypes = emotionnelScore > 0 || impulsifScore > 0 || inattentifScore > 0;
+  const tdahRisk = data.disorderScreening?.TDAH;
+  const showTdahCard =
+    hasTdahSubtypes ||
+    tdahRisk === 'Risque Modéré' ||
+    tdahRisk === 'Risque Élevé';
+  const dominantSubtype = [
+    { type: 'emotionnel', score: emotionnelScore },
+    { type: 'impulsif', score: impulsifScore },
+    { type: 'inattentif', score: inattentifScore },
+  ].sort((a, b) => b.score - a.score)[0];
+
+  const TDAH_SUBTYPE_CONFIG = {
+    emotionnel: {
+      icon: '🌊',
+      label: 'Émotionnel',
+      zone: 'Cortex préfrontal ventromédian',
+      barColor: 'bg-amber-500',
+      textColor: 'text-amber-700 dark:text-amber-400',
+      bgColor: 'bg-amber-50 dark:bg-amber-900/20',
+      score: emotionnelScore,
+      description: 'Instabilité émotionnelle, colères, agressivité — cortex préfrontal ventromédian',
+    },
+    impulsif: {
+      icon: '⚡',
+      label: 'Impulsif',
+      zone: 'Cortex cingulaire antérieur',
+      barColor: 'bg-red-500',
+      textColor: 'text-red-700 dark:text-red-400',
+      bgColor: 'bg-red-50 dark:bg-red-900/20',
+      score: impulsifScore,
+      description: 'Agitation, parole précipitée, difficulté à attendre — cortex cingulaire antérieur',
+    },
+    inattentif: {
+      icon: '🌫️',
+      label: 'Inattentif',
+      zone: 'Réseau du mode par défaut',
+      barColor: 'bg-indigo-500',
+      textColor: 'text-indigo-700 dark:text-indigo-400',
+      bgColor: 'bg-indigo-50 dark:bg-indigo-900/20',
+      score: inattentifScore,
+      description: 'Inattention sans hyperactivité, discret — souvent non détecté chez les filles',
+    },
+  } as const;
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       {/* Header */}
@@ -162,6 +212,66 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* TDAH Subtype Card (Pan et al., JAMA Psychiatry 2026) */}
+        {showTdahCard && (
+          <div className="col-span-12 bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-xl text-orange-600 dark:text-orange-400">
+                <span className="material-symbols-outlined text-2xl">neurology</span>
+              </div>
+              <div>
+                <h3 className="font-headline font-bold text-xl text-on-surface">Profil TDAH — Classification neurologique</h3>
+                <p className="text-xs text-on-surface-variant font-body">Pan et al., JAMA Psychiatry 2026</p>
+              </div>
+              {dominantSubtype && dominantSubtype.score > 0 && (
+                <span className={`ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-headline font-bold ${TDAH_SUBTYPE_CONFIG[dominantSubtype.type as keyof typeof TDAH_SUBTYPE_CONFIG].bgColor} ${TDAH_SUBTYPE_CONFIG[dominantSubtype.type as keyof typeof TDAH_SUBTYPE_CONFIG].textColor}`}>
+                  {TDAH_SUBTYPE_CONFIG[dominantSubtype.type as keyof typeof TDAH_SUBTYPE_CONFIG].icon}
+                  Profil dominant : {TDAH_SUBTYPE_CONFIG[dominantSubtype.type as keyof typeof TDAH_SUBTYPE_CONFIG].label}
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {(['emotionnel', 'impulsif', 'inattentif'] as const).map(type => {
+                const cfg = TDAH_SUBTYPE_CONFIG[type];
+                return (
+                  <div key={type} className={`flex items-center gap-4 p-4 rounded-xl ${cfg.bgColor}`}>
+                    <span className="text-2xl shrink-0">{cfg.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 mb-1.5">
+                        <span className={`font-headline font-bold text-base ${cfg.textColor}`}>{cfg.label}</span>
+                        <span className="text-xs text-on-surface-variant font-body truncate">{cfg.zone}</span>
+                      </div>
+                      <div className="h-2.5 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${cfg.barColor} transition-all duration-1000 ease-out`}
+                          style={{ width: `${cfg.score}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className={`shrink-0 inline-flex items-center justify-center w-12 h-8 rounded-lg font-headline font-black text-sm ${cfg.textColor} ${cfg.bgColor} border border-current/20`}>
+                      {cfg.score}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {dominantSubtype && dominantSubtype.score > 0 && (
+              <div className={`mt-5 p-4 rounded-xl border ${TDAH_SUBTYPE_CONFIG[dominantSubtype.type as keyof typeof TDAH_SUBTYPE_CONFIG].bgColor} border-current/10`}>
+                <p className={`text-sm font-body leading-relaxed ${TDAH_SUBTYPE_CONFIG[dominantSubtype.type as keyof typeof TDAH_SUBTYPE_CONFIG].textColor}`}>
+                  <span className="font-bold">Description clinique :</span>{' '}
+                  {TDAH_SUBTYPE_CONFIG[dominantSubtype.type as keyof typeof TDAH_SUBTYPE_CONFIG].description}
+                </p>
+              </div>
+            )}
+
+            <p className="mt-4 text-xs text-on-surface-variant font-body italic">
+              Basé sur l&apos;analyse de centaines d&apos;IRM cérébrales (Pan et al., JAMA Psychiatry 2026)
+            </p>
           </div>
         )}
 
@@ -272,10 +382,24 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                   if (marker.score > 70) barColor = 'bg-error';
                   else if (marker.score > 40) barColor = 'bg-tertiary';
 
+                  const isTdahSubtype =
+                    category === 'TDAH' &&
+                    (marker.subcategory === 'emotionnel' || marker.subcategory === 'impulsif' || marker.subcategory === 'inattentif');
+                  const tdahSubtypeCfg = isTdahSubtype
+                    ? TDAH_SUBTYPE_CONFIG[marker.subcategory as 'emotionnel' | 'impulsif' | 'inattentif']
+                    : null;
+
                   return (
                     <div key={idx} className="space-y-3">
                       <div className="flex justify-between items-end">
-                        <span className="font-headline font-bold text-base text-on-surface-variant">{marker.name}</span>
+                        {isTdahSubtype && tdahSubtypeCfg ? (
+                          <span className={`font-headline font-bold text-base ${tdahSubtypeCfg.textColor} flex items-center gap-1.5`}>
+                            <span>{tdahSubtypeCfg.icon}</span>
+                            {tdahSubtypeCfg.label}
+                          </span>
+                        ) : (
+                          <span className="font-headline font-bold text-base text-on-surface-variant">{marker.name}</span>
+                        )}
                         <span className={`text-base font-bold ${barColor.replace('bg-', 'text-')}`}>{marker.score}%</span>
                       </div>
                       <div className="h-3 w-full bg-surface-variant rounded-full overflow-hidden shadow-inner">

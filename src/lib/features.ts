@@ -1,3 +1,5 @@
+import { AudioMetadata } from './types';
+
 /**
  * ═══════════════════════════════════════════════════════════════════════
  * DYS-Detect — Feature Vector Extraction
@@ -173,6 +175,15 @@ export interface FeatureVector {
 
   /** Score de synchronie conversationnelle (0=bonne, 50=modérée, 100=faible) */
   conversationalSynchronyScore: number | null;
+
+  // TDAH subtype-specific features (Pan et al. 2026)
+  emotionalVocabularyScore?: number | null;      // density of emotional words (Type 1)
+  prosodyBrutalVariation?: number | null;         // computed from audio pitch/volume change (Type 1)
+  wordAnticipationErrors?: number | null;         // substitution errors from speed (Type 2)
+  pauseAbsenceScore?: number | null;              // inverse of pause frequency (Type 2)
+  narrativeThreadLossScore?: number | null;       // topic drift without return (Type 3)
+  thematicDiscontinuityScore?: number | null;     // thematic breaks count (Type 3)
+  midSentencePauseCount?: number | null;          // long pauses mid-sentence (Type 3)
 }
 
 // ─── Feature Labels (for display) ────────────────────────────────────────
@@ -230,6 +241,13 @@ export const FEATURE_LABELS: Record<keyof Omit<FeatureVector, 'studentId' | 'ana
   responseLatencyMs:        { label: 'Latence de réponse',           category: 'Vidéo',         unit: 'ms',   relevantFor: ['TSA'],          description: 'Temps moyen avant de répondre' },
   facialExpressionVariabilityScore: { label: 'Variabilité faciale',  category: 'Vidéo',         unit: '0-100',relevantFor: ['TSA'],          description: '0 = plate, 50 = normale, 100 = élevée' },
   conversationalSynchronyScore:     { label: 'Synchronie conv.',     category: 'Vidéo',         unit: '0-100',relevantFor: ['TSA'],          description: '0 = bonne, 50 = modérée, 100 = faible' },
+  emotionalVocabularyScore:         { label: 'Score vocabulaire émotionnel',   unit: '/100',  relevantFor: ['TDAH'],        description: 'Densité de mots émotionnellement chargés — profil TDAH Émotionnel',   category: 'Pragmatique' },
+  prosodyBrutalVariation:           { label: 'Variation brutale de prosodie',  unit: '/100',  relevantFor: ['TDAH', 'TSA'], description: 'Changements soudains de débit/volume — profil TDAH Émotionnel',        category: 'Audio' },
+  wordAnticipationErrors:           { label: 'Erreurs d\'anticipation lexicale', unit: 'count', relevantFor: ['TDAH'],      description: 'Substitutions de mots par anticipation — profil TDAH Impulsif',       category: 'Pragmatique' },
+  pauseAbsenceScore:                { label: 'Score absence de pauses',        unit: '/100',  relevantFor: ['TDAH'],        description: 'Enchaînement sans pause — profil TDAH Impulsif',                      category: 'Audio' },
+  narrativeThreadLossScore:         { label: 'Perte du fil narratif',          unit: '/100',  relevantFor: ['TDAH'],        description: 'Digressions sans retour au sujet — profil TDAH Inattentif',           category: 'Pragmatique' },
+  thematicDiscontinuityScore:       { label: 'Discontinuité thématique',       unit: 'count', relevantFor: ['TDAH'],        description: 'Ruptures thématiques sans conclusion — profil TDAH Inattentif',       category: 'Pragmatique' },
+  midSentencePauseCount:            { label: 'Pauses en milieu de phrase',     unit: 'count', relevantFor: ['TDAH'],        description: 'Pauses longues ≥ 2s en milieu de phrase — profil TDAH Inattentif',   category: 'Audio' },
 };
 
 // ─── Text Feature Extraction (runs client-side or server-side) ───────────
@@ -494,4 +512,68 @@ export function mergeFeatures(
   }
 
   return empty;
+}
+
+/**
+ * Extract TDAH subtype-specific features algorithmically (not by AI).
+ * Based on Pan et al., JAMA Psychiatry 2026 — 3 neurological subtypes.
+ */
+export function extractTDAHSubtypeFeatures(
+  transcription: string,
+  audioMetadata?: AudioMetadata
+): Partial<FeatureVector> {
+  const words = transcription.toLowerCase().split(/\s+/).filter(Boolean);
+  const totalWords = words.length;
+  if (totalWords === 0) return {};
+
+  // Type 1 - Emotional vocabulary
+  const emotionalWords = ['adore', 'déteste', 'horrible', 'incroyable', 'nul', 'super', 'génial', 'naze', 'énerve', 'rage', 'trop', 'vraiment', 'jamais', 'toujours', 'catastrophe', 'fantastique', 'insupportable'];
+  const emotionalVocabularyScore = Math.min(100, Math.round((words.filter(w => emotionalWords.some(e => w.includes(e))).length / totalWords) * 500));
+
+  // Type 2 - Word anticipation errors (substitution patterns)
+  const sentences = transcription.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const unfinishedSentences = sentences.filter(s => s.trim().split(/\s+/).length < 4).length;
+  const wordAnticipationErrors = Math.round((unfinishedSentences / Math.max(1, sentences.length)) * 100);
+
+  // Type 2 - Pause absence (from audio if available)
+  let pauseAbsenceScore: number | null = null;
+  if (audioMetadata) {
+    // Low pause count + high words per minute = high impulsivity score
+    const wpmScore = Math.min(100, Math.max(0, (audioMetadata.wordsPerMinute - 120) / 80 * 100));
+    const pauseScore = Math.max(0, 100 - (audioMetadata.pauseCount * 10));
+    pauseAbsenceScore = Math.round((wpmScore + pauseScore) / 2);
+  }
+
+  // Type 1 - Prosody brutal variation (from audio if available)
+  let prosodyBrutalVariation: number | null = null;
+  if (audioMetadata) {
+    prosodyBrutalVariation = audioMetadata.pitchVariance === 'high' ? 80 : audioMetadata.pitchVariance === 'normal' ? 40 : 20;
+  }
+
+  // Type 3 - Narrative thread loss (topic shifts without return)
+  const topicIndicators = ['en fait', 'ah oui', 'non attends', 'enfin', 'bref', 'mais bon', 'peu importe'];
+  const threadLossEvents = words.filter((w, i) =>
+    topicIndicators.some(t => transcription.toLowerCase().substring(Math.max(0, transcription.toLowerCase().indexOf(words[i]) - 5)).startsWith(t))
+  ).length;
+  const narrativeThreadLossScore = Math.min(100, threadLossEvents * 20);
+
+  // Type 3 - Mid-sentence pauses (from audio if available)
+  let midSentencePauseCount: number | null = null;
+  if (audioMetadata) {
+    // High max pause + speech rate slow = inattentif pattern
+    midSentencePauseCount = audioMetadata.maxPauseDurationMs > 2000 ? Math.floor(audioMetadata.pauseCount * 0.4) : 0;
+  }
+
+  // Type 3 - Thematic discontinuity
+  const thematicDiscontinuityScore = Math.min(100, threadLossEvents * 15 + unfinishedSentences * 5);
+
+  return {
+    emotionalVocabularyScore,
+    prosodyBrutalVariation,
+    wordAnticipationErrors,
+    pauseAbsenceScore,
+    narrativeThreadLossScore,
+    thematicDiscontinuityScore,
+    midSentencePauseCount,
+  };
 }

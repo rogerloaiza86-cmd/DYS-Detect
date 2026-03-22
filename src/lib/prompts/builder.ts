@@ -142,9 +142,9 @@ export function buildAnalysisPrompt(opts: PromptOptions): string {
 
   if (analyzeTdah) {
     markerExamples.push(
-      '{ "name": "Attention / Concentration", "score": 0, "category": "TDAH", "subcategory": "attention", "details": [] }',
-      '{ "name": "Impulsivité verbale", "score": 0, "category": "TDAH", "subcategory": "impulsivite", "details": [] }',
-      '{ "name": "Fluence / Régulation", "score": 0, "category": "TDAH", "subcategory": "fluence", "details": [] }',
+      '{ "name": "TDAH Émotionnel", "score": 0, "category": "TDAH", "subcategory": "emotionnel", "details": [] }',
+      '{ "name": "TDAH Impulsif", "score": 0, "category": "TDAH", "subcategory": "impulsif", "details": [] }',
+      '{ "name": "TDAH Inattentif", "score": 0, "category": "TDAH", "subcategory": "inattentif", "details": [] }',
     );
   }
 
@@ -181,6 +181,10 @@ export function buildAnalysisPrompt(opts: PromptOptions): string {
     }
   }
 
+  const tdahSubtypeField = analyzeTdah
+    ? '\n  "tdahDominantSubtype": "emotionnel" | "impulsif" | "inattentif" | null,'
+    : '';
+
   return `Tu es un expert en troubles neurodéveloppementaux de l'enfant et de l'adolescent (DYS, TDAH, TSA). Tu analyses des productions orales et/ou écrites d'élèves pour identifier des indicateurs de risque et orienter vers les professionnels compétents (orthophoniste, neuropsychologue, médecin). Ton rôle est le repérage précoce, pas l'établissement d'un diagnostic clinique.
 
 ${ageContext}
@@ -213,7 +217,7 @@ Pour chaque marqueur, fournis un score ET des observations concrètes tirées du
 Renvoie UNIQUEMENT un objet JSON valide (pas de markdown, pas de commentaires) :
 {
   "globalRiskLevel": "Sain" | "Risque Modéré" | "Risque Élevé",
-  "disorderScreening": { ${screeningExample} },
+  "disorderScreening": { ${screeningExample} },${tdahSubtypeField}
   "markers": [
     ${markerExamples.join(',\n    ')}
   ],

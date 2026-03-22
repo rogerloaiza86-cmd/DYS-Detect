@@ -2,6 +2,8 @@
 
 export type RiskLevel = 'Sain' | 'Risque Modéré' | 'Risque Élevé' | 'Non identifié';
 
+export type TDAHSubtype = 'emotionnel' | 'impulsif' | 'inattentif';
+
 export type AnalysisMode = 'dictee' | 'lecture_libre' | 'expression_libre' | 'conversation_guidee';
 
 export type DisorderCategory = 'DYS' | 'TDAH' | 'TSA';
@@ -116,6 +118,7 @@ export interface AnalysisResult {
   audioMetadata?: AudioMetadata;
   videoMetadata?: VideoMetadata;
   disorderScreening?: Record<DisorderCategory, RiskLevel>;
+  tdahDominantSubtype?: TDAHSubtype; // derived from markers
 }
 
 // ─── Transcription ───────────────────────────────────────────────────────

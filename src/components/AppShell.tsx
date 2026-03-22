@@ -12,6 +12,7 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: 'dashboard' },
   { href: '/new-analysis', label: 'Nouvelle Analyse', icon: 'mic' },
   { href: '/students', label: 'Élèves', icon: 'groups' },
+  { href: '/research', label: 'Recherche', icon: 'science' },
   { href: '/help', label: 'Aide', icon: 'help_outline' },
 ];
 

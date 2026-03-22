@@ -20,10 +20,11 @@ CREATE INDEX IF NOT EXISTS idx_analysis_results_video_metadata
   ON analysis_results USING GIN (video_metadata);
 
 -- 5. Table pour les sessions d'observation vidéo (Phase 3 — facultative)
+-- Note: student_id et analysis_result_id sont TEXT pour correspondre aux tables existantes
 CREATE TABLE IF NOT EXISTS video_observations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  analysis_result_id UUID REFERENCES analysis_results(id) ON DELETE SET NULL,
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  analysis_result_id TEXT REFERENCES analysis_results(id) ON DELETE SET NULL,
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   duration_ms INTEGER,
   video_blob_path TEXT,              -- stockage Supabase Storage (si activé)

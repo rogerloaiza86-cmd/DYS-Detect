@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AudioRecorder from '@/components/AudioRecorder';
 import { getStudents, createStudent, saveResult } from '@/lib/store';
-import { Student } from '@/lib/types';
+import { Student, AnalysisMode, ANALYSIS_MODES, EXPRESSION_TOPICS, CONVERSATION_QUESTIONS, AudioMetadata } from '@/lib/types';
 import Link from 'next/link';
 import { Upload, X } from 'lucide-react';
 
@@ -29,6 +29,16 @@ function compressImage(dataUrl: string, maxWidth = 1200, quality = 0.7): Promise
   });
 }
 
+const DEFAULT_DICTATION = "Le petit chat boit son lait dans la cuisine.";
+
+const REFERENCE_TEXTS = [
+  { id: 'cp1', grade: 'CP', label: 'Le chat et la souris', text: "Le chat mange la souris. Il court dans le jardin. Maman appelle le chat. Il revient vite." },
+  { id: 'ce1', grade: 'CE1', label: 'La promenade en forêt', text: "Ce matin, nous sommes allés nous promener dans la forêt. Les oiseaux chantaient dans les arbres. Nous avons ramassé des feuilles de toutes les couleurs." },
+  { id: 'ce2', grade: 'CE2', label: 'Le marché du village', text: "Tous les samedis, grand-mère va au marché du village. Elle achète des fruits, des légumes et du fromage. Le marchand lui donne toujours un petit extra parce qu'elle est sa meilleure cliente." },
+  { id: 'cm1', grade: 'CM1', label: "L'aventure du randonneur", text: "Pierre marchait depuis plusieurs heures sur le sentier de montagne. Le soleil commençait à descendre derrière les sommets enneigés. Il devait trouver un abri avant la nuit, car la température allait baisser rapidement." },
+  { id: 'cm2', grade: 'CM2', label: 'La découverte scientifique', text: "Les scientifiques ont découvert une nouvelle espèce de papillon dans la forêt amazonienne. Cet insecte, aux ailes bleu métallique, ne vit que dans les zones où la végétation est particulièrement dense. Cette découverte souligne l'importance de protéger les forêts tropicales." },
+];
+
 export default function NewAnalysisPage() {
   const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
@@ -36,18 +46,30 @@ export default function NewAnalysisPage() {
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showNewStudentForm, setShowNewStudentForm] = useState(false);
   const [newStudent, setNewStudent] = useState({ firstName: '', lastName: '', grade: '', age: '' });
 
-  // Steps: 1: Capture, 2: Transcription, 3: Analyse IA
+  // Multi-mode state
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('dictee');
+  const [referenceText, setReferenceText] = useState(DEFAULT_DICTATION);
+  const [customReferenceText, setCustomReferenceText] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState(EXPRESSION_TOPICS[0].label);
+  const [conversationStep, setConversationStep] = useState(0);
+  const [isConversationActive, setIsConversationActive] = useState(false);
+
+  // Steps: 1: Capture, 2: Transcription, 3: Extraction audio, 4: Analyse IA
   const [currentStep, setCurrentStep] = useState(1);
+  const [processingLabel, setProcessingLabel] = useState('');
 
   useEffect(() => {
     getStudents().then(setStudents);
   }, []);
+
+  const currentModeConfig = ANALYSIS_MODES.find(m => m.id === analysisMode)!;
+  const currentStudentObj = students.find(s => s.id === selectedStudent);
 
   const handleSelectChange = (value: string) => {
     if (value === 'new') {
@@ -78,12 +100,10 @@ export default function NewAnalysisPage() {
     setNewStudent({ firstName: '', lastName: '', grade: '', age: '' });
   };
 
-  const currentStudentObj = students.find(s => s.id === selectedStudent);
-
   const handleRecordingComplete = (blob: Blob) => {
     setRecordedBlob(blob);
   };
-  
+
   const handleResetRecording = () => {
     setRecordedBlob(null);
   };
@@ -105,14 +125,28 @@ export default function NewAnalysisPage() {
     setImagePreview(null);
   };
 
+  const handleModeChange = (mode: AnalysisMode) => {
+    setAnalysisMode(mode);
+    setRecordedBlob(null);
+    setImageFile(null);
+    setImagePreview(null);
+    setConversationStep(0);
+    setIsConversationActive(false);
+    if (mode === 'dictee') {
+      setReferenceText(DEFAULT_DICTATION);
+    }
+  };
+
   const handleAnalyze = async () => {
     if (!recordedBlob || !selectedStudent) return;
 
     setIsProcessing(true);
     setErrorMessage(null);
-    setCurrentStep(2); // Transcription in progress
+    setCurrentStep(2);
+    setProcessingLabel('Transcription en cours...');
 
     try {
+      // Step 1: Transcribe audio
       const formData = new FormData();
       formData.append('audio', recordedBlob);
       formData.append('studentId', selectedStudent);
@@ -122,16 +156,41 @@ export default function NewAnalysisPage() {
         body: formData,
       });
       const transcribeData = await transcribeRes.json();
-
       if (transcribeData.error) throw new Error(transcribeData.error);
 
-      setCurrentStep(3); // Analysis in progress
+      // Step 2: Extract audio features (parallel-safe, for TDAH/TSA modes)
+      setCurrentStep(3);
+      setProcessingLabel('Extraction des caractéristiques audio...');
 
-      // Compress handwriting image before sending
+      let audioMetadata: AudioMetadata | undefined;
+      if (analysisMode !== 'dictee') {
+        try {
+          const audioFormData = new FormData();
+          audioFormData.append('audio', recordedBlob);
+          const audioRes = await fetch('/api/extract-audio-features', {
+            method: 'POST',
+            body: audioFormData,
+          });
+          if (audioRes.ok) {
+            audioMetadata = await audioRes.json();
+          }
+        } catch (e) {
+          console.warn('Audio feature extraction failed, continuing without:', e);
+        }
+      }
+
+      // Step 3: Analyze with Claude
+      setCurrentStep(4);
+      setProcessingLabel('Analyse IA multi-troubles...');
+
       let compressedImage = imagePreview;
       if (imagePreview) {
         compressedImage = await compressImage(imagePreview);
       }
+
+      const effectiveRefText = analysisMode === 'dictee' ? referenceText
+        : analysisMode === 'lecture_libre' ? (customReferenceText || referenceText)
+        : undefined;
 
       const analyzeRes = await fetch('/api/analyze', {
         method: 'POST',
@@ -139,17 +198,22 @@ export default function NewAnalysisPage() {
         body: JSON.stringify({
           transcription: transcribeData.text,
           studentId: selectedStudent,
-          handwritingImage: compressedImage
+          handwritingImage: compressedImage,
+          analysisMode,
+          referenceText: effectiveRefText,
+          audioMetadata,
+          studentAge: currentStudentObj?.age,
+          topic: analysisMode === 'expression_libre' ? selectedTopic : undefined,
+          questions: analysisMode === 'conversation_guidee' ? CONVERSATION_QUESTIONS : undefined,
         })
       });
       const analysisData = await analyzeRes.json();
-
       if (analysisData.error) throw new Error(analysisData.error);
 
-      // Save locally and also attach handwriting info to display later
       const finalAnalysis = {
         ...analysisData,
-        handwritingImage: imagePreview // Keep original for display
+        handwritingImage: imagePreview,
+        audioMetadata,
       };
 
       await saveResult(finalAnalysis);
@@ -163,75 +227,228 @@ export default function NewAnalysisPage() {
     }
   };
 
+  // Determine the effective reference text for display
+  const displayedReferenceText = analysisMode === 'dictee' ? referenceText
+    : analysisMode === 'lecture_libre' ? (customReferenceText || referenceText)
+    : null;
+
   return (
-    <div className="flex flex-col gap-12 max-w-6xl mx-auto w-full">
+    <div className="flex flex-col gap-8 max-w-6xl mx-auto w-full">
       {/* Header */}
       <div>
         <h1 className="font-headline font-extrabold text-3xl text-on-surface tracking-tight">
-          Nouvelle Analyse Multimodale {currentStudentObj ? `- ${currentStudentObj.firstName} ${currentStudentObj.lastName}` : ''}
+          Nouvelle Analyse {currentStudentObj ? `- ${currentStudentObj.firstName} ${currentStudentObj.lastName}` : ''}
         </h1>
+        <p className="text-on-surface-variant mt-1 font-body">Analyse multi-troubles : DYS, TDAH, TSA</p>
       </div>
 
-      {/* Stepper Indicator */}
-      <div className="flex items-center justify-center gap-8">
-        <div className={`flex items-center gap-3 transition-opacity ${currentStep >= 1 ? 'opacity-100' : 'opacity-40'}`}>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-headline font-bold transition-colors ${currentStep >= 1 ? 'bg-primary text-on-primary shadow-md shadow-primary/20' : 'bg-surface-container-highest text-on-surface-variant'}`}>1</div>
-          <span className={`font-headline font-bold transition-colors ${currentStep >= 1 ? 'text-primary' : ''}`}>Capture D&E</span>
-        </div>
-        <div className={`h-px w-16 bg-outline-variant transition-opacity ${currentStep >= 2 ? 'opacity-100' : 'opacity-30'}`}></div>
-        <div className={`flex items-center gap-3 transition-opacity ${currentStep >= 2 ? 'opacity-100' : 'opacity-40'}`}>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-headline font-bold transition-colors ${currentStep >= 2 ? 'bg-primary text-on-primary shadow-md shadow-primary/20' : 'bg-surface-container-highest text-on-surface-variant'}`}>2</div>
-          <span className={`font-headline font-bold transition-colors ${currentStep >= 2 ? 'text-primary' : ''}`}>Transcription</span>
-        </div>
-        <div className={`h-px w-16 bg-outline-variant transition-opacity ${currentStep >= 3 ? 'opacity-100' : 'opacity-30'}`}></div>
-        <div className={`flex items-center gap-3 transition-opacity ${currentStep >= 3 ? 'opacity-100' : 'opacity-40'}`}>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-headline font-bold transition-colors ${currentStep >= 3 ? 'bg-primary text-on-primary shadow-md shadow-primary/20' : 'bg-surface-container-highest text-on-surface-variant'}`}>3</div>
-          <span className={`font-headline font-bold transition-colors ${currentStep >= 3 ? 'text-primary' : ''}`}>Analyse IA</span>
-        </div>
+      {/* Mode Selector */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {ANALYSIS_MODES.map((mode) => (
+          <button
+            key={mode.id}
+            onClick={() => handleModeChange(mode.id)}
+            disabled={isProcessing}
+            className={`relative p-4 rounded-xl border-2 transition-all text-left group ${
+              analysisMode === mode.id
+                ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                : 'border-outline-variant/20 bg-surface-container-lowest hover:border-primary/30 hover:bg-primary/3'
+            }`}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <span className={`material-symbols-outlined text-2xl ${analysisMode === mode.id ? 'text-primary' : 'text-on-surface-variant'}`}>
+                {mode.icon}
+              </span>
+              <span className={`font-headline font-bold text-sm ${analysisMode === mode.id ? 'text-primary' : 'text-on-surface'}`}>
+                {mode.label}
+              </span>
+            </div>
+            <p className="text-xs text-on-surface-variant font-body leading-relaxed">{mode.description}</p>
+            <div className="flex gap-1 mt-3">
+              {mode.bestFor.map(d => (
+                <span key={d} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  d === 'DYS' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                  : d === 'TDAH' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                  : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                }`}>{d}</span>
+              ))}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Stepper */}
+      <div className="flex items-center justify-center gap-6 flex-wrap">
+        {[
+          { n: 1, label: 'Capture' },
+          { n: 2, label: 'Transcription' },
+          ...(analysisMode !== 'dictee' ? [{ n: 3, label: 'Audio Features' }] : []),
+          { n: analysisMode !== 'dictee' ? 4 : 3, label: 'Analyse IA' },
+        ].map((step, i, arr) => (
+          <div key={step.n} className="flex items-center gap-3">
+            <div className={`flex items-center gap-2 transition-opacity ${currentStep >= step.n ? 'opacity-100' : 'opacity-40'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-headline font-bold text-sm transition-colors ${currentStep >= step.n ? 'bg-primary text-on-primary shadow-md shadow-primary/20' : 'bg-surface-container-highest text-on-surface-variant'}`}>{i + 1}</div>
+              <span className={`font-headline font-bold text-xs transition-colors ${currentStep >= step.n ? 'text-primary' : ''}`}>{step.label}</span>
+            </div>
+            {i < arr.length - 1 && <div className={`h-px w-8 bg-outline-variant transition-opacity ${currentStep > step.n ? 'opacity-100' : 'opacity-30'}`} />}
+          </div>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Main Interaction Card */}
-        <div className="lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 md:p-12 flex flex-col items-center justify-center gap-8 shadow-sm border border-outline-variant/10 relative overflow-hidden min-h-[500px]">
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
-          
-          <div className="text-center space-y-4 relative z-10 w-full">
-            <span className="font-headline uppercase tracking-widest text-primary font-bold text-sm bg-primary/5 px-4 py-1.5 rounded-full">Texte de Référence</span>
-            <h2 className="font-headline text-3xl font-medium text-on-surface max-w-lg mx-auto leading-relaxed mt-6">
-              "Le petit chat boit son lait dans la cuisine."
-            </h2>
+        {/* Main Card */}
+        <div className="lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 md:p-10 flex flex-col gap-8 shadow-sm border border-outline-variant/10 relative overflow-hidden min-h-[480px]">
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/5 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Mode-specific content */}
+          <div className="relative z-10 w-full">
+            {/* DICTÉE: show reference sentence */}
+            {analysisMode === 'dictee' && (
+              <div className="text-center space-y-4">
+                <span className="font-headline uppercase tracking-widest text-primary font-bold text-sm bg-primary/5 px-4 py-1.5 rounded-full">Texte de Référence</span>
+                <h2 className="font-headline text-2xl font-medium text-on-surface max-w-lg mx-auto leading-relaxed mt-4">
+                  &quot;{referenceText}&quot;
+                </h2>
+              </div>
+            )}
+
+            {/* LECTURE LIBRE: text selector + custom input */}
+            {analysisMode === 'lecture_libre' && (
+              <div className="space-y-4">
+                <span className="font-headline uppercase tracking-widest text-primary font-bold text-sm bg-primary/5 px-4 py-1.5 rounded-full">Texte de Lecture</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                  {REFERENCE_TEXTS.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => { setReferenceText(t.text); setCustomReferenceText(''); }}
+                      className={`text-left p-3 rounded-lg border transition-all text-sm ${
+                        referenceText === t.text && !customReferenceText
+                          ? 'border-primary bg-primary/5' : 'border-outline-variant/20 hover:border-primary/30'
+                      }`}
+                    >
+                      <span className="font-bold text-on-surface">{t.label}</span>
+                      <span className="text-on-surface-variant ml-2">({t.grade})</span>
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  placeholder="Ou collez votre propre texte ici..."
+                  value={customReferenceText}
+                  onChange={(e) => setCustomReferenceText(e.target.value)}
+                  className="w-full p-4 rounded-xl border border-outline-variant/20 bg-surface text-on-surface font-body text-sm min-h-[100px] focus:ring-2 focus:ring-primary/50 focus:outline-none"
+                />
+                {displayedReferenceText && (
+                  <div className="p-4 bg-surface-variant/30 rounded-xl border border-outline-variant/10">
+                    <p className="text-sm text-on-surface leading-relaxed font-body italic">&quot;{displayedReferenceText}&quot;</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* EXPRESSION LIBRE: topic cards */}
+            {analysisMode === 'expression_libre' && (
+              <div className="space-y-4">
+                <span className="font-headline uppercase tracking-widest text-primary font-bold text-sm bg-primary/5 px-4 py-1.5 rounded-full">Sujet de Discussion</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+                  {EXPRESSION_TOPICS.map(topic => (
+                    <button
+                      key={topic.id}
+                      onClick={() => setSelectedTopic(topic.label)}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                        selectedTopic === topic.label
+                          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                          : 'border-outline-variant/20 hover:border-primary/30'
+                      }`}
+                    >
+                      <span className={`material-symbols-outlined text-2xl ${selectedTopic === topic.label ? 'text-primary' : 'text-on-surface-variant'}`}>{topic.icon}</span>
+                      <span className="text-xs font-headline font-bold text-center">{topic.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* CONVERSATION GUIDÉE: sequential prompts */}
+            {analysisMode === 'conversation_guidee' && (
+              <div className="space-y-4">
+                <span className="font-headline uppercase tracking-widest text-primary font-bold text-sm bg-primary/5 px-4 py-1.5 rounded-full">Conversation Guidée</span>
+                <p className="text-sm text-on-surface-variant font-body mt-2">
+                  Posez chaque question à l&apos;élève, puis enregistrez l&apos;échange complet en une seule prise.
+                </p>
+                <div className="space-y-2 mt-4">
+                  {CONVERSATION_QUESTIONS.map((q, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                        i === conversationStep && isConversationActive
+                          ? 'border-primary bg-primary/5 shadow-sm'
+                          : i < conversationStep ? 'border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
+                          : 'border-outline-variant/20'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
+                        i < conversationStep ? 'bg-green-500 text-white'
+                        : i === conversationStep && isConversationActive ? 'bg-primary text-on-primary'
+                        : 'bg-surface-container-highest text-on-surface-variant'
+                      }`}>
+                        {i < conversationStep ? '✓' : i + 1}
+                      </div>
+                      <span className="text-sm font-body text-on-surface">{q}</span>
+                    </div>
+                  ))}
+                </div>
+                {!isConversationActive && (
+                  <button
+                    onClick={() => { setIsConversationActive(true); setConversationStep(0); }}
+                    className="mt-2 px-4 py-2 bg-primary/10 text-primary font-headline font-bold text-sm rounded-lg hover:bg-primary/20 transition-colors"
+                  >
+                    Commencer la conversation
+                  </button>
+                )}
+                {isConversationActive && conversationStep < CONVERSATION_QUESTIONS.length && (
+                  <button
+                    onClick={() => setConversationStep(prev => prev + 1)}
+                    className="mt-2 px-4 py-2 bg-primary text-on-primary font-headline font-bold text-sm rounded-lg hover:bg-primary-dim transition-colors"
+                  >
+                    {conversationStep < CONVERSATION_QUESTIONS.length - 1 ? 'Question suivante' : 'Terminer'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="relative z-10 w-full flex flex-col md:flex-row gap-6 mt-4">
-            
-            {/* Audio Recorder section */}
-            <div className="flex-1 flex flex-col items-center p-6 bg-surface rounded-2xl border border-outline-variant/20 shadow-sm">
-                <div className="flex items-center gap-2 mb-6">
-                  <span className="material-symbols-outlined text-primary">mic</span>
-                  <h3 className="font-headline font-bold text-on-surface">1. Lecture orale (Requis)</h3>
-                </div>
-                <AudioRecorder
-                  onRecordingComplete={handleRecordingComplete}
-                  isProcessing={isProcessing}
-                  hasRecorded={!!recordedBlob}
-                  onReset={handleResetRecording}
-                />
+          {/* Audio + Image capture */}
+          <div className="relative z-10 w-full flex flex-col md:flex-row gap-6">
+            {/* Audio Recorder */}
+            <div className={`flex flex-col items-center p-6 bg-surface rounded-2xl border border-outline-variant/20 shadow-sm ${currentModeConfig.supportsHandwriting ? 'flex-1' : 'w-full'}`}>
+              <div className="flex items-center gap-2 mb-6">
+                <span className="material-symbols-outlined text-primary">mic</span>
+                <h3 className="font-headline font-bold text-on-surface">
+                  {analysisMode === 'conversation_guidee' ? 'Enregistrer l\'échange' : 'Lecture orale'}
+                </h3>
+              </div>
+              <AudioRecorder
+                onRecordingComplete={handleRecordingComplete}
+                isProcessing={isProcessing}
+                hasRecorded={!!recordedBlob}
+                onReset={handleResetRecording}
+              />
             </div>
 
-            {/* Handwriting Upload section */}
-            <div className="flex-1 flex flex-col items-center p-6 bg-surface rounded-2xl border border-outline-variant/20 shadow-sm w-full">
+            {/* Handwriting Upload (only for modes that support it) */}
+            {currentModeConfig.supportsHandwriting && (
+              <div className="flex-1 flex flex-col items-center p-6 bg-surface rounded-2xl border border-outline-variant/20 shadow-sm">
                 <div className="flex items-center gap-2 mb-6">
                   <span className="material-symbols-outlined text-secondary">draw</span>
-                  <h3 className="font-headline font-bold text-on-surface">2. Écriture (Optionnel)</h3>
+                  <h3 className="font-headline font-bold text-on-surface">Écriture (Optionnel)</h3>
                 </div>
-                
                 <div className="w-full h-full flex flex-col items-center justify-center min-h-[200px]">
                   {imagePreview ? (
                     <div className="relative w-full h-48 rounded-xl overflow-hidden border border-outline-variant/30 group">
                       <img src={imagePreview} alt="Aperçu écriture" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button 
+                        <button
                           onClick={removeImage}
                           disabled={isProcessing}
                           className="w-10 h-10 rounded-full bg-error text-white flex items-center justify-center hover:bg-error-dim"
@@ -247,59 +464,65 @@ export default function NewAnalysisPage() {
                       </div>
                       <span className="text-sm font-bold font-headline text-on-surface">Ajouter une photo</span>
                       <span className="text-xs text-on-surface-variant font-body mt-1">JPG, PNG, WEBP</span>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleImageUpload} 
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
                         className="hidden"
                         capture="environment"
                         disabled={isProcessing}
                       />
                     </label>
                   )}
-                  {imagePreview && (
-                    <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-secondary-container/30 border border-secondary/20 text-secondary rounded-full font-bold text-sm w-full justify-center">
-                       <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                       Photo ajoutée
-                    </div>
-                  )}
                 </div>
-            </div>
-
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Guidance & Help Sidebar */}
+        {/* Sidebar */}
         <div className="lg:col-span-4 flex flex-col gap-6">
-          <div className="bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-primary/10">
+          {/* Mode info */}
+          <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-primary/10">
             <div className="flex items-center gap-3 mb-4 text-primary">
-              <span className="material-symbols-outlined">lightbulb</span>
-              <h3 className="font-headline font-bold text-lg">Instructions Multiples</h3>
+              <span className="material-symbols-outlined">{currentModeConfig.icon}</span>
+              <h3 className="font-headline font-bold text-lg">Mode : {currentModeConfig.label}</h3>
             </div>
-            <p className="text-on-surface-variant leading-relaxed font-body text-sm">
-              Vous pouvez maintenant évaluer la phonologie (dyslexie) et le geste graphique (dysgraphie) simultanément. L'IA analysera les deux composants et mettra en évidence leurs liens probables.
-            </p>
-            <div className="mt-6 p-4 bg-surface-container-low rounded-lg">
-              <ul className="space-y-3 text-sm text-on-surface-variant font-body">
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-sm mt-0.5 text-secondary">check_circle</span>
-                  <span>Enregistrement oral : Micro à 15cm.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-sm mt-0.5 text-secondary">check_circle</span>
-                  <span>Photo : Éclairez bien la feuille, évitez les ombres.</span>
-                </li>
-              </ul>
+            <p className="text-on-surface-variant leading-relaxed font-body text-sm">{currentModeConfig.description}</p>
+
+            <div className="mt-4 p-3 bg-surface-container-low rounded-lg">
+              <p className="text-xs font-headline font-bold text-on-surface-variant mb-2">Troubles analysés :</p>
+              <div className="flex gap-2">
+                {currentModeConfig.bestFor.map(d => (
+                  <span key={d} className={`text-xs font-bold px-3 py-1 rounded-full ${
+                    d === 'DYS' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    : d === 'TDAH' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                    : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                  }`}>{d}</span>
+                ))}
+                {/* DYS is always checked even if not primary */}
+                {!currentModeConfig.bestFor.includes('DYS') && (
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-50 text-blue-500 dark:bg-blue-900/10 dark:text-blue-400">DYS (base)</span>
+                )}
+              </div>
             </div>
+
+            {analysisMode !== 'dictee' && (
+              <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-200 dark:border-orange-800/30">
+                <p className="text-xs text-orange-700 dark:text-orange-300 font-body">
+                  <span className="font-bold">Nouveau :</span> Les caractéristiques audio (pauses, prosodie, débit) seront extraites automatiquement pour affiner la détection TDAH/TSA.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Student Selection */}
-          <div className="bg-secondary-container/20 rounded-xl p-8 shadow-sm border border-secondary/10">
-            <div className="flex items-center gap-3 mb-6 text-on-secondary-container">
+          <div className="bg-secondary-container/20 rounded-xl p-6 shadow-sm border border-secondary/10">
+            <div className="flex items-center gap-3 mb-4 text-on-secondary-container">
               <span className="material-symbols-outlined">child_care</span>
-              <h3 className="font-headline font-bold text-lg">Profil de l'enfant</h3>
+              <h3 className="font-headline font-bold text-lg">Profil</h3>
             </div>
-            
+
             <select
               value={selectedStudent}
               onChange={(e) => handleSelectChange(e.target.value)}
@@ -314,66 +537,39 @@ export default function NewAnalysisPage() {
             </select>
 
             {showNewStudentForm ? (
-               <div className="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant/20 shadow-sm space-y-4">
-                 <div className="grid grid-cols-2 gap-3">
-                   <input
-                     placeholder="Prénom"
-                     value={newStudent.firstName}
-                     onChange={(e) => setNewStudent({ ...newStudent, firstName: e.target.value })}
-                     className="p-2.5 rounded-lg border border-outline-variant/30 text-sm w-full font-body focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                   />
-                   <input
-                     placeholder="Nom"
-                     value={newStudent.lastName}
-                     onChange={(e) => setNewStudent({ ...newStudent, lastName: e.target.value })}
-                     className="p-2.5 rounded-lg border border-outline-variant/30 text-sm w-full font-body focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                   />
-                   <input
-                     placeholder="Classe"
-                     value={newStudent.grade}
-                     onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })}
-                     className="p-2.5 rounded-lg border border-outline-variant/30 text-sm w-full font-body focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                   />
-                   <input
-                     placeholder="Âge"
-                     type="number"
-                     min="3"
-                     max="18"
-                     value={newStudent.age}
-                     onChange={(e) => setNewStudent({ ...newStudent, age: e.target.value })}
-                     className="p-2.5 rounded-lg border border-outline-variant/30 text-sm w-full font-body focus:ring-2 focus:ring-primary/50 focus:outline-none"
-                   />
-                 </div>
-                 <button onClick={handleAddStudent} className="w-full bg-primary text-on-primary text-sm font-bold py-3 rounded-lg hover:bg-primary-dim transition-all">Créer l'élève</button>
-               </div>
-            ) : currentStudentObj ? (
-              <div className="space-y-4 mt-2">
-                <div className="flex justify-between items-center border-b border-on-secondary-container/10 pb-3">
-                  <span className="text-sm text-on-secondary-container/70 font-medium">Langue</span>
-                  <span className="text-sm font-bold text-on-secondary-container">Français (FR)</span>
+              <div className="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/20 shadow-sm space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <input placeholder="Prénom" value={newStudent.firstName} onChange={(e) => setNewStudent({ ...newStudent, firstName: e.target.value })} className="p-2.5 rounded-lg border border-outline-variant/30 text-sm w-full font-body focus:ring-2 focus:ring-primary/50 focus:outline-none" />
+                  <input placeholder="Nom" value={newStudent.lastName} onChange={(e) => setNewStudent({ ...newStudent, lastName: e.target.value })} className="p-2.5 rounded-lg border border-outline-variant/30 text-sm w-full font-body focus:ring-2 focus:ring-primary/50 focus:outline-none" />
+                  <input placeholder="Classe" value={newStudent.grade} onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })} className="p-2.5 rounded-lg border border-outline-variant/30 text-sm w-full font-body focus:ring-2 focus:ring-primary/50 focus:outline-none" />
+                  <input placeholder="Âge" type="number" min="3" max="18" value={newStudent.age} onChange={(e) => setNewStudent({ ...newStudent, age: e.target.value })} className="p-2.5 rounded-lg border border-outline-variant/30 text-sm w-full font-body focus:ring-2 focus:ring-primary/50 focus:outline-none" />
                 </div>
-                <div className="flex justify-between items-center border-b border-on-secondary-container/10 pb-3">
-                  <span className="text-sm text-on-secondary-container/70 font-medium">Classe</span>
+                <button onClick={handleAddStudent} className="w-full bg-primary text-on-primary text-sm font-bold py-3 rounded-lg hover:bg-primary-dim transition-all">Créer</button>
+              </div>
+            ) : currentStudentObj ? (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center border-b border-on-secondary-container/10 pb-2">
+                  <span className="text-sm text-on-secondary-container/70">Classe</span>
                   <span className="text-sm font-bold text-on-secondary-container">{currentStudentObj.grade}</span>
                 </div>
-                <div className="flex justify-between items-center pb-1">
-                  <span className="text-sm text-on-secondary-container/70 font-medium">Âge</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-on-secondary-container/70">Âge</span>
                   <span className="text-sm font-bold text-on-secondary-container">{currentStudentObj.age} ans</span>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-on-surface-variant italic py-2">Sélectionnez ou créez un élève pour commencer l'analyse.</p>
+              <p className="text-sm text-on-surface-variant italic py-2">Sélectionnez ou créez un élève.</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Error Banner with Retry */}
+      {/* Error Banner */}
       {errorMessage && (
         <div className="flex items-center gap-4 p-5 bg-error-container/20 border border-error/20 rounded-xl">
           <span className="material-symbols-outlined text-error text-2xl">error</span>
           <div className="flex-1">
-            <p className="font-headline font-bold text-error text-sm">Erreur lors de l'analyse</p>
+            <p className="font-headline font-bold text-error text-sm">Erreur</p>
             <p className="text-on-surface-variant font-body text-sm mt-1">{errorMessage}</p>
           </div>
           <button
@@ -387,30 +583,28 @@ export default function NewAnalysisPage() {
       )}
 
       {/* Footer Actions */}
-      <div className="flex justify-between items-center pt-8 mb-8 border-t border-surface-container-highest">
+      <div className="flex justify-between items-center pt-6 mb-8 border-t border-surface-container-highest">
         <Link href="/" className="flex items-center gap-2 text-on-surface-variant font-headline font-bold hover:text-on-surface transition-all px-4 py-2 hover:bg-surface-container-low rounded-lg">
           <span className="material-symbols-outlined">arrow_back</span>
-          <span>Annuler l'analyse</span>
+          <span>Annuler</span>
         </Link>
-        <div className="flex gap-4 cursor-auto">
-          <button 
-            onClick={handleAnalyze}
-            disabled={!recordedBlob || !selectedStudent || isProcessing}
-            className={`px-10 py-4 font-headline font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-3 ${(!recordedBlob || !selectedStudent || isProcessing) ? 'bg-surface-variant text-on-surface-variant opacity-50 cursor-not-allowed' : 'bg-primary text-on-primary hover:bg-primary-dim hover:scale-[1.03] active:scale-95'}`}
-          >
-            {isProcessing ? (
-              <>
-                <span className="w-5 h-5 border-2 border-on-surface-variant/30 border-t-on-surface-variant rounded-full animate-spin"></span>
-                Traitement Multimodal...
-              </>
-            ) : (
-              <>
-                 <span className="material-symbols-outlined">psychology</span>
-                 Évaluer Dyslexie {imagePreview ? '& Dysgraphie' : ''}
-              </>
-            )}
-          </button>
-        </div>
+        <button
+          onClick={handleAnalyze}
+          disabled={!recordedBlob || !selectedStudent || isProcessing}
+          className={`px-8 py-4 font-headline font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-3 ${(!recordedBlob || !selectedStudent || isProcessing) ? 'bg-surface-variant text-on-surface-variant opacity-50 cursor-not-allowed' : 'bg-primary text-on-primary hover:bg-primary-dim hover:scale-[1.03] active:scale-95'}`}
+        >
+          {isProcessing ? (
+            <>
+              <span className="w-5 h-5 border-2 border-on-surface-variant/30 border-t-on-surface-variant rounded-full animate-spin" />
+              {processingLabel}
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined">psychology</span>
+              Analyser ({currentModeConfig.bestFor.join(' + ')})
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

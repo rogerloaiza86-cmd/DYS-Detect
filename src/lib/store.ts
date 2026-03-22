@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Student, AnalysisResult, RiskLevel, UserProfile } from './types';
+import { Student, AnalysisResult, RiskLevel, UserProfile, DiagnosticLabel } from './types';
 
 // ─── Keys localStorage (profil uniquement) ────────────────────────────────
 const PROFILE_KEY   = 'dys-detect-profile';
@@ -16,6 +16,10 @@ function toStudent(row: Record<string, unknown>): Student {
     age:              row.age as number,
     lastAnalysisDate: row.last_analysis_date as string | null,
     riskLevel:        row.risk_level as RiskLevel,
+    isUlisStudent:    (row.is_ulis_student as boolean) ?? false,
+    consentStatus:    (row.consent_status as Student['consentStatus']) ?? 'pending',
+    consentDate:      row.consent_date as string | null,
+    consentGuardianName: row.consent_guardian_name as string | null,
   };
 }
 
@@ -29,6 +33,23 @@ function toResult(row: Record<string, unknown>): AnalysisResult {
     markers:          row.markers as AnalysisResult['markers'],
     recommendations:  row.recommendations as string[],
     handwritingImage: row.handwriting_image as string | undefined,
+    analysisMode:     (row.analysis_mode as AnalysisResult['analysisMode']) ?? 'dictee',
+    referenceText:    row.reference_text as string | undefined,
+    audioMetadata:    row.audio_metadata as AnalysisResult['audioMetadata'],
+    disorderScreening: row.disorder_screening as AnalysisResult['disorderScreening'],
+  };
+}
+
+function toLabel(row: Record<string, unknown>): DiagnosticLabel {
+  return {
+    id:            row.id as string,
+    studentId:     row.student_id as string,
+    disorder:      row.disorder as DiagnosticLabel['disorder'],
+    subtype:       row.subtype as string | undefined,
+    confirmedBy:   row.confirmed_by as string,
+    confirmedDate: row.confirmed_date as string,
+    severity:      row.severity as DiagnosticLabel['severity'],
+    notes:         row.notes as string | undefined,
   };
 }
 
@@ -79,7 +100,7 @@ export async function getStudentById(id: string): Promise<Student | null> {
 }
 
 export async function saveStudent(student: Student): Promise<void> {
-  const row = {
+  const row: Record<string, unknown> = {
     id:                 student.id,
     first_name:         student.firstName,
     last_name:          student.lastName,
@@ -89,6 +110,12 @@ export async function saveStudent(student: Student): Promise<void> {
     last_analysis_date: student.lastAnalysisDate,
     risk_level:         student.riskLevel,
   };
+  // Include ULIS fields only if defined (backward compat with migration v1)
+  if (student.isUlisStudent !== undefined) row.is_ulis_student = student.isUlisStudent;
+  if (student.consentStatus !== undefined) row.consent_status = student.consentStatus;
+  if (student.consentDate !== undefined)   row.consent_date = student.consentDate;
+  if (student.consentGuardianName !== undefined) row.consent_guardian_name = student.consentGuardianName;
+
   const { error } = await supabase.from('students').upsert(row);
   if (error) console.error('saveStudent:', error);
 }
@@ -155,16 +182,22 @@ export async function deleteResult(id: string): Promise<void> {
 }
 
 export async function saveResult(result: AnalysisResult): Promise<void> {
-  const row = {
-    id:               result.id,
-    student_id:       result.studentId,
-    date:             result.date,
+  const row: Record<string, unknown> = {
+    id:                result.id,
+    student_id:        result.studentId,
+    date:              result.date,
     global_risk_level: result.globalRiskLevel,
-    transcription:    result.transcription,
-    markers:          result.markers,
-    recommendations:  result.recommendations,
+    transcription:     result.transcription,
+    markers:           result.markers,
+    recommendations:   result.recommendations,
     handwriting_image: result.handwritingImage ?? null,
   };
+  // V2 fields (only if defined, backward compat)
+  if (result.analysisMode)       row.analysis_mode = result.analysisMode;
+  if (result.referenceText)      row.reference_text = result.referenceText;
+  if (result.audioMetadata)      row.audio_metadata = result.audioMetadata;
+  if (result.disorderScreening)  row.disorder_screening = result.disorderScreening;
+
   const { error } = await supabase.from('analysis_results').upsert(row);
   if (error) { console.error('saveResult:', error); return; }
 
@@ -179,4 +212,75 @@ export async function saveResult(result: AnalysisResult): Promise<void> {
       riskLevel: result.globalRiskLevel,
     });
   }
+}
+
+// ─── Diagnostic Labels (Supabase) ────────────────────────────────────────
+
+export async function getDiagnosticLabels(studentId: string): Promise<DiagnosticLabel[]> {
+  const { data, error } = await supabase
+    .from('diagnostic_labels')
+    .select('*')
+    .eq('student_id', studentId)
+    .order('created_at', { ascending: true });
+  if (error) { console.error('getDiagnosticLabels:', error); return []; }
+  return (data ?? []).map(toLabel);
+}
+
+export async function addDiagnosticLabel(label: DiagnosticLabel): Promise<void> {
+  const row = {
+    id:             label.id,
+    student_id:     label.studentId,
+    disorder:       label.disorder,
+    subtype:        label.subtype ?? null,
+    confirmed_by:   label.confirmedBy,
+    confirmed_date: label.confirmedDate,
+    severity:       label.severity ?? null,
+    notes:          label.notes ?? null,
+  };
+  const { error } = await supabase.from('diagnostic_labels').insert(row);
+  if (error) console.error('addDiagnosticLabel:', error);
+}
+
+export async function removeDiagnosticLabel(id: string): Promise<void> {
+  const { error } = await supabase.from('diagnostic_labels').delete().eq('id', id);
+  if (error) console.error('removeDiagnosticLabel:', error);
+}
+
+// ─── Consent Audit (Supabase) ────────────────────────────────────────────
+
+export async function logConsentAction(
+  studentId: string,
+  action: 'consent_given' | 'consent_withdrawn' | 'data_exported' | 'data_deleted',
+  performedBy: string,
+  details?: Record<string, unknown>,
+): Promise<void> {
+  const { error } = await supabase.from('consent_audit_log').insert({
+    id: `audit-${Date.now()}`,
+    student_id: studentId,
+    action,
+    performed_by: performedBy,
+    details: details ?? null,
+  });
+  if (error) console.error('logConsentAction:', error);
+}
+
+export async function updateStudentConsent(
+  studentId: string,
+  status: 'signed' | 'refused',
+  guardianName: string,
+  performedBy: string,
+): Promise<void> {
+  const student = await getStudentById(studentId);
+  if (!student) return;
+
+  await saveStudent({
+    ...student,
+    consentStatus: status,
+    consentDate: new Date().toISOString(),
+    consentGuardianName: guardianName,
+  });
+
+  await logConsentAction(studentId, status === 'signed' ? 'consent_given' : 'consent_withdrawn', performedBy, {
+    guardianName,
+  });
 }

@@ -1,33 +1,44 @@
 import { NextResponse } from 'next/server';
-import { AnalysisResult } from '@/lib/types';
+import { AnalysisResult, AnalysisMode, AudioMetadata } from '@/lib/types';
 import { mockAnalysisResult } from '@/lib/mock-data';
+import { buildAnalysisPrompt } from '@/lib/prompts/builder';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { transcription, studentId, handwritingImage } = body;
-    
+    const {
+      transcription,
+      studentId,
+      handwritingImage,
+      analysisMode = 'dictee' as AnalysisMode,
+      referenceText,
+      audioMetadata,
+      studentAge,
+      topic,
+      questions,
+    } = body;
+
     if (!transcription) {
       return NextResponse.json({ error: "Aucune transcription fournie" }, { status: 400 });
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    
-    // Fallback: Si pas de clé structurée ou clé example, on renvoie les résultats mockés
+
+    // Fallback mock
     if (!apiKey || apiKey === "sk-ant-your-anthropic-key") {
       console.log("Utilisation de l'analyse mockée (Anthropic API Key manquante)");
       await new Promise(resolve => setTimeout(resolve, 2000));
       return NextResponse.json<AnalysisResult>({
         ...mockAnalysisResult,
         studentId: studentId || "1",
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        analysisMode,
       });
     }
 
-    // Gestion de l'image (si fournie)
+    // Gestion de l'image
     let imageBlock = null;
     if (handwritingImage) {
-      // expected format: data:image/png;base64,iVBORw0KGgo...
       const matches = handwritingImage.match(/^data:(image\/[a-z]+);base64,(.+)$/);
       if (matches) {
         imageBlock = {
@@ -41,45 +52,19 @@ export async function POST(request: Request) {
       }
     }
 
-    // Création du prompt multimodal
-    const promptText = `Voici une transcription textuelle de la lecture ou de l'expression orale d'un élève :
-"${transcription}"
+    // Construction du prompt via le builder modulaire
+    const promptText = buildAnalysisPrompt({
+      mode: analysisMode,
+      transcription,
+      referenceText,
+      hasImage: !!imageBlock,
+      audioMetadata: audioMetadata as AudioMetadata | undefined,
+      studentAge,
+      topic,
+      questions,
+    });
 
-${imageBlock ? "De plus, tu disposes d'une photo d'un échantillon d'écriture manuscrite de ce même enfant.\n" : ""}
-Tu dois analyser ces éléments pour identifier d'éventuels marqueurs de troubles d'apprentissage sur ces axes :
-1. Phonologie (Dyslexie) : inversions, substitutions, confusions de sons à l'oral.
-2. Morphosyntaxe (Dysphasie) : accords, conjugaisons, structure globale.
-3. Fluence (Anxiété / TDAH) : répétitions, mots coupés, pauses atypiques.
-${imageBlock ? "4. Grapho-moteur (Dysgraphie) : à partir de la photo, analyse l'irrégularité des lettres, le respect des lignes, les ratures et la lisibilité globale.\n" : ""}
-Renvoie UNIQUEMENT un objet JSON valide avec la structure exacte suivante (n'ajoute aucun markdown ou retour à la ligne hors JSON) :
-{
-  "globalRiskLevel": "Sain" | "Risque Modéré" | "Risque Élevé",
-  "markers": [
-    {
-      "name": "Dyslexie (Phonologie)",
-      "score": number,
-      "details": ["observation 1"]
-    },
-    {
-      "name": "Dysphasie (Morphosyntaxe)",
-      "score": number,
-      "details": []
-    },
-    {
-      "name": "Fluence / Anxiété",
-      "score": number,
-      "details": []
-    }${imageBlock ? `,
-    {
-      "name": "Dysgraphie (Grapho-moteur)",
-      "score": number,
-      "details": ["observation sur l'écriture"]
-    }` : ""}
-  ],
-  "recommendations": ["recommandation 1", "recommandation 2"]
-}`;
-
-    let messageContent: any[] = [];
+    const messageContent: unknown[] = [];
     if (imageBlock) {
       messageContent.push(imageBlock);
     }
@@ -96,8 +81,8 @@ Renvoie UNIQUEMENT un objet JSON valide avec la structure exacte suivante (n'ajo
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', // Claude Sonnet 4.6 - latest model with vision support
-        max_tokens: 1000,
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2500,
         temperature: 0,
         messages: [
           { role: 'user', content: messageContent }
@@ -113,7 +98,7 @@ Renvoie UNIQUEMENT un objet JSON valide avec la structure exacte suivante (n'ajo
 
     const data = await response.json();
     let analysisOutput;
-    
+
     try {
       const textResponse = data.content[0].text;
       const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
@@ -128,13 +113,17 @@ Renvoie UNIQUEMENT un objet JSON valide avec la structure exacte suivante (n'ajo
       studentId: studentId || "1",
       date: new Date().toISOString(),
       globalRiskLevel: analysisOutput.globalRiskLevel,
-      transcription: transcription,
-      markers: analysisOutput.markers,
-      recommendations: analysisOutput.recommendations,
+      transcription,
+      markers: analysisOutput.markers || [],
+      recommendations: analysisOutput.recommendations || [],
+      analysisMode,
+      referenceText,
+      audioMetadata,
+      disorderScreening: analysisOutput.disorderScreening,
     };
-    
+
     return NextResponse.json<AnalysisResult>(result);
-    
+
   } catch (error) {
     console.error("Erreur dans '/api/analyze':", error);
     return NextResponse.json({ error: "Erreur interne au traitement IA" }, { status: 500 });

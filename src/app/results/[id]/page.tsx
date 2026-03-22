@@ -130,6 +130,14 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         </div>
       </header>
 
+      {/* Legal disclaimer — always visible */}
+      <div className="flex items-start gap-3 px-5 py-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl text-sm">
+        <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-xl shrink-0 mt-0.5">info</span>
+        <p className="text-amber-800 dark:text-amber-300 font-body leading-relaxed">
+          <span className="font-bold">Outil d&apos;aide au repérage précoce.</span> Les indicateurs présentés ci-dessous sont générés par intelligence artificielle à des fins d&apos;orientation pédagogique. Ils ne constituent pas une évaluation clinique et ne remplacent pas l&apos;avis d&apos;un professionnel de santé (orthophoniste, neuropsychologue, médecin). En cas de doute, orientez l&apos;élève vers un bilan spécialisé.
+        </p>
+      </div>
+
       <div id="report-content" className="grid grid-cols-12 gap-6">
 
         {/* Disorder Screening Cards (if multi-trouble) */}

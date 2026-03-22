@@ -4,7 +4,15 @@
       "Bash(npm install:*)",
       "Bash(npm run:*)",
       "Bash(find C:/Users/roger/Desktop/DYS-Detect/node_modules/next/dist/docs -type f -name *param* -o -name *route* -o -name *dynamic*)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "mcp__c4ddc769-90dc-4117-8123-035dd917402f__list_tables",
+      "mcp__c4ddc769-90dc-4117-8123-035dd917402f__list_projects",
+      "mcp__c4ddc769-90dc-4117-8123-035dd917402f__execute_sql",
+      "Bash(node scripts/seed-demo.mjs)",
+      "WebSearch",
+      "Bash(grep -r \"diagnostic\\\\|diagnostiquer\\\\|diagnostiqué\\\\|diagnostics\\\\|détecter\\\\|détection\\\\|détecte\\\\|détecté\\\\|dépister\\\\|dépistage\\\\|DYS-Detect\" /c/Users/roger/Desktop/DYS-Detect/src --include=*.ts --include=*.tsx --include=*.json -n)",
+      "Bash(find /c/Users/roger/Desktop/DYS-Detect -type f \\\\\\(-name *.json -o -name *.md -o -name *.txt \\\\\\))"
     ]
   }
 }

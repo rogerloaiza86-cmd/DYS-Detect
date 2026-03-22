@@ -52,7 +52,7 @@ const SECTIONS = [
     items: [
       { q: 'Comment lire le graphique radar ?', a: "Chaque axe correspond à un trouble potentiel. Plus le score est élevé (vers l'extérieur), plus le risque est marqué. En dessous de 40% : faible. De 40 à 70% : modéré. Au-dessus de 70% : élevé." },
       { q: 'Que signifient les couleurs des barres ?', a: "Vert (< 40%) : pas de signal significatif. Orange (40-70%) : surveiller. Rouge (> 70%) : attention requise, consulter un spécialiste." },
-      { q: 'Les recommandations sont-elles définitives ?', a: "Non. Elles sont générées par l'IA comme premières pistes pédagogiques. Elles ne remplacent pas un diagnostic médical ou orthophonique." },
+      { q: 'Les recommandations sont-elles définitives ?', a: "Non. Elles sont générées par l'IA comme premières pistes pédagogiques et d'orientation. Elles ne remplacent pas une évaluation professionnelle (orthophoniste, neuropsychologue, médecin)." },
       { q: 'Comment exporter le rapport ?', a: "Cliquez sur \"Exporter le rapport en PDF\" en bas de la page de résultats. Un fichier A4 est généré avec le graphique radar, les scores et les recommandations." },
       { q: 'Comment supprimer une analyse ?', a: "En bas à gauche de la page de résultats, cliquez \"Supprimer cette analyse\". Une confirmation est demandée. Vous serez redirigé vers l'historique de l'élève." },
     ],
@@ -163,9 +163,9 @@ export default function HelpPage() {
       {/* Footer CTA */}
       <div className="mt-12 p-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/10 text-center">
         <span className="material-symbols-outlined text-4xl text-primary mb-3 block" style={{ fontVariationSettings: "'FILL' 1" }}>support_agent</span>
-        <h3 className="font-headline font-bold text-on-surface text-xl mb-2">Prêt à détecter ?</h3>
+        <h3 className="font-headline font-bold text-on-surface text-xl mb-2">Prêt à analyser ?</h3>
         <p className="text-on-surface-variant font-body text-sm mb-6">
-          DYS-Detect est un outil de dépistage précoce. Il ne remplace pas un diagnostic médical.
+          DYS-Detect est un outil d'aide au repérage précoce. Les indicateurs générés orientent vers les professionnels compétents — ils ne constituent pas une évaluation clinique.
         </p>
         <Link href="/new-analysis" className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-on-primary rounded-xl font-headline font-bold hover:bg-primary-dim transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-primary/20">
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>mic</span>

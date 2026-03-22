@@ -114,7 +114,7 @@ export const ANALYSIS_MODES: AnalysisModeConfig[] = [
   {
     id: 'dictee',
     label: 'Dictée',
-    description: "L'élève lit ou écrit une phrase imposée. Idéal pour détecter les troubles DYS.",
+    description: "L'élève lit ou écrit une phrase imposée. Idéal pour repérer des indicateurs de troubles DYS.",
     icon: 'edit_note',
     requiresReferenceText: true,
     supportsHandwriting: true,

@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "DYS-Detect - Dashboard",
-  description: "Portail Enseignant et Orthophoniste pour la détection des troubles DYS",
+  description: "Portail Enseignant et Orthophoniste pour le repérage et l'orientation des troubles DYS, TDAH et TSA",
 };
 
 export default function RootLayout({

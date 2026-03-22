@@ -510,7 +510,7 @@ export default function NewAnalysisPage() {
             {analysisMode !== 'dictee' && (
               <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-200 dark:border-orange-800/30">
                 <p className="text-xs text-orange-700 dark:text-orange-300 font-body">
-                  <span className="font-bold">Nouveau :</span> Les caractéristiques audio (pauses, prosodie, débit) seront extraites automatiquement pour affiner la détection TDAH/TSA.
+                  <span className="font-bold">Nouveau :</span> Les caractéristiques audio (pauses, prosodie, débit) seront extraites automatiquement pour affiner le repérage des indicateurs TDAH/TSA.
                 </p>
               </div>
             )}

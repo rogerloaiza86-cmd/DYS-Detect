@@ -139,7 +139,7 @@ export default function ResearchPage() {
             Recherche & Données
           </h1>
           <p className="text-on-surface-variant font-body mt-1">
-            Variables objectives extraites — corrélation avec diagnostics confirmés
+            Variables objectives extraites — corrélation avec profils cliniques confirmés
           </p>
         </div>
         <div className="flex gap-3">
@@ -170,11 +170,11 @@ export default function ResearchPage() {
         </div>
         <div className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10">
           <p className="text-3xl font-headline font-black text-secondary">{labeledCount}</p>
-          <p className="text-sm text-on-surface-variant">Avec diagnostic confirmé</p>
+          <p className="text-sm text-on-surface-variant">Avec profil clinique confirmé</p>
         </div>
         <div className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10">
           <p className="text-3xl font-headline font-black text-on-surface">{unlabeledCount}</p>
-          <p className="text-sm text-on-surface-variant">Sans diagnostic</p>
+          <p className="text-sm text-on-surface-variant">Sans profil clinique enregistré</p>
         </div>
         <div className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10">
           <p className="text-3xl font-headline font-black text-tertiary">{Object.keys(FEATURE_LABELS).length}</p>
@@ -213,7 +213,7 @@ export default function ResearchPage() {
             Matrice de comparaison des variables
           </h2>
           <p className="text-sm text-on-surface-variant mt-1">
-            Moyenne de chaque variable par groupe diagnostic. Les écarts significatifs révèlent les marqueurs discriminants.
+            Moyenne de chaque variable par groupe d'orientation. Les écarts significatifs révèlent les indicateurs discriminants.
           </p>
         </div>
 
@@ -326,7 +326,7 @@ export default function ResearchPage() {
               <tr className="bg-surface-container-low">
                 <th className="text-left p-3 font-headline font-bold sticky left-0 bg-surface-container-low z-20">Élève</th>
                 <th className="text-center p-3 font-headline font-bold">Mode</th>
-                <th className="text-center p-3 font-headline font-bold">Diagnostic</th>
+                <th className="text-center p-3 font-headline font-bold">Profil clinique</th>
                 {filteredFeatures.slice(0, 15).map(([key, meta]) => (
                   <th key={key} className="text-center p-3 font-headline font-bold min-w-[80px]" title={meta.description}>
                     {meta.label.length > 15 ? meta.label.slice(0, 15) + '...' : meta.label}

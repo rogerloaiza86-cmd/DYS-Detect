@@ -144,7 +144,7 @@ export function buildAnalysisPrompt(opts: PromptOptions): string {
     }
   }
 
-  return `Tu es un expert en troubles neurodéveloppementaux de l'enfant et de l'adolescent (DYS, TDAH, TSA). Tu analyses des productions orales et/ou écrites d'élèves pour détecter des marqueurs de risque.
+  return `Tu es un expert en troubles neurodéveloppementaux de l'enfant et de l'adolescent (DYS, TDAH, TSA). Tu analyses des productions orales et/ou écrites d'élèves pour identifier des indicateurs de risque et orienter vers les professionnels compétents (orthophoniste, neuropsychologue, médecin). Ton rôle est le repérage précoce, pas l'établissement d'un diagnostic clinique.
 
 ${ageContext}
 

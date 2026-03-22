@@ -152,7 +152,7 @@ export function formatProfilesForPrompt(profiles: ReferenceProfile[]): string {
   const totalSamples = profiles.reduce((s, p) => s + p.sampleCount, 0);
 
   let text = `\n## Profils de référence (basés sur ${totalSamples} analyses d'élèves réels)\n\n`;
-  text += `Ces profils ont été calculés à partir d'analyses d'élèves avec diagnostics confirmés par des professionnels. Utilise-les comme référentiel de comparaison.\n\n`;
+  text += `Ces profils ont été calculés à partir d'analyses d'élèves avec évaluations cliniques confirmées par des professionnels (orthophonistes, neuropsychologues, CRA). Utilise-les comme référentiel de comparaison pour orienter ton analyse.\n\n`;
 
   for (const profile of profiles) {
     text += `### Profil ${profile.disorder} (${profile.sampleCount} analyses)\n`;

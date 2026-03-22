@@ -45,12 +45,17 @@ export const exportToPDF = async (elementId: string, filename: string) => {
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(22);
     pdf.setTextColor(25, 127, 230); // Primary color
-    pdf.text("Rapport d'Analyse DYS-Detect", 15, 20);
-    
+    pdf.text("Rapport d'Orientation — DYS-Detect", 15, 20);
+
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(10);
     pdf.setTextColor(100, 100, 100);
     pdf.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 15, 28);
+
+    // Legal disclaimer in PDF
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(150, 100, 30);
+    pdf.text("Outil d'aide au repérage précoce — ne constitue pas une évaluation clinique. Orienter vers un professionnel de santé en cas de doute.", 15, 34);
 
     // Add captured image
     pdf.addImage(imgData, 'PNG', 10, 35, pdfWidth - 20, pdfHeight * ((pdfWidth - 20) / pdfWidth));

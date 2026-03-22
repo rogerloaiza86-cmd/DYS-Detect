@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { AnalysisResult, AnalysisMode, AudioMetadata } from '@/lib/types';
 import { mockAnalysisResult } from '@/lib/mock-data';
 import { buildAnalysisPrompt } from '@/lib/prompts/builder';
+import { getReferenceProfiles, formatProfilesForPrompt } from '@/lib/reference-profiles';
+import { extractTextFeatures, extractAudioFeatures } from '@/lib/features';
 
 export async function POST(request: Request) {
   try {
@@ -52,6 +54,22 @@ export async function POST(request: Request) {
       }
     }
 
+    // Extract objective features algorithmically
+    const textFeatures = extractTextFeatures(transcription, referenceText || undefined);
+    const audioFeatures = audioMetadata ? extractAudioFeatures(audioMetadata as AudioMetadata) : {};
+    const extractedFeatures = { ...textFeatures, ...audioFeatures } as Record<string, number | null>;
+
+    // Load reference profiles from labeled ULIS students
+    let referenceProfilesText = '';
+    try {
+      const profiles = await getReferenceProfiles();
+      if (profiles.length > 0) {
+        referenceProfilesText = formatProfilesForPrompt(profiles);
+      }
+    } catch (e) {
+      console.warn('Could not load reference profiles:', e);
+    }
+
     // Construction du prompt via le builder modulaire
     const promptText = buildAnalysisPrompt({
       mode: analysisMode,
@@ -62,6 +80,8 @@ export async function POST(request: Request) {
       studentAge,
       topic,
       questions,
+      referenceProfilesText,
+      extractedFeatures,
     });
 
     const messageContent: unknown[] = [];

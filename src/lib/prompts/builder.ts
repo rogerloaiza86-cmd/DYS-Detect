@@ -15,6 +15,8 @@ interface PromptOptions {
   studentAge?: number;
   topic?: string;            // For expression_libre
   questions?: string[];      // For conversation_guidee
+  referenceProfilesText?: string; // Injected from real ULIS data
+  extractedFeatures?: Record<string, number | null>; // Objective variables
 }
 
 function getModeContext(opts: PromptOptions): string {
@@ -130,7 +132,19 @@ export function buildAnalysisPrompt(opts: PromptOptions): string {
   if (analyzeTsa) disorderScreeningKeys.push('TSA');
   const screeningExample = disorderScreeningKeys.map(k => `"${k}": "Sain" | "Risque Modéré" | "Risque Élevé"`).join(', ');
 
-  return `Tu es un expert en troubles neurodéveloppementaux de l'enfant (DYS, TDAH, TSA). Tu analyses des productions orales et/ou écrites d'élèves pour détecter des marqueurs de risque.
+  // Build extracted features section
+  let extractedFeaturesSection = '';
+  if (opts.extractedFeatures) {
+    const entries = Object.entries(opts.extractedFeatures)
+      .filter(([, v]) => v !== null && v !== undefined)
+      .map(([k, v]) => `- ${k}: ${typeof v === 'number' ? (v % 1 === 0 ? v : (v as number).toFixed(3)) : v}`)
+      .join('\n');
+    if (entries) {
+      extractedFeaturesSection = `\n## Variables objectives extraites automatiquement de cet élève\n\nCes variables ont été calculées algorithmiquement (pas par IA) à partir de la transcription et des données audio :\n${entries}\n\nUtilise ces variables pour confirmer ou nuancer ton évaluation qualitative.\n`;
+    }
+  }
+
+  return `Tu es un expert en troubles neurodéveloppementaux de l'enfant et de l'adolescent (DYS, TDAH, TSA). Tu analyses des productions orales et/ou écrites d'élèves pour détecter des marqueurs de risque.
 
 ${ageContext}
 
@@ -138,7 +152,8 @@ ${getModeContext(opts)}
 
 ${opts.hasImage ? "De plus, tu disposes d'une photo d'un échantillon d'écriture manuscrite de ce même enfant.\n" : ""}
 ${audioSection}
-
+${extractedFeaturesSection}
+${opts.referenceProfilesText || ''}
 ---
 
 ${disorderSections}

@@ -217,7 +217,7 @@ const RESULTS = [
         details: ['Structure de phrase globalement maintenue', 'Quelques omissions de mots grammaticaux'],
       },
       {
-        name: 'Attention / Concentration', score: 15, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Inattentif', score: 15, category: 'TDAH', subcategory: 'inattentif',
         details: ['Pas de degradation progressive notable', 'Effort soutenu malgre les difficultes'],
       },
     ],
@@ -254,28 +254,28 @@ const RESULTS = [
         details: ['Pas de trouble phonologique identifie'],
       },
       {
-        name: 'Attention / Concentration', score: 70, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Inattentif', score: 70, category: 'TDAH', subcategory: 'inattentif',
         details: [
           'Perte du fil narratif : "qu\'est-ce que je disais..."',
-          'Auto-correction "chien non en fait c\'etait un chat"',
           'Abandon d\'idee : "ma soeur elle a... non c\'est pas important"',
           'Incapacite a terminer les idees avant d\'en commencer d\'autres',
+          'Pauses longues en milieu de recit (maxPauseDurationMs: 3800ms)',
         ],
       },
       {
-        name: 'Impulsivite verbale', score: 58, category: 'TDAH', subcategory: 'impulsivite',
+        name: 'TDAH Emotionnel', score: 52, category: 'TDAH', subcategory: 'emotionnel',
+        details: [
+          'Transitions abruptes liees a des associations emotionnelles',
+          'Variations de prosodie marquees (pitchVariance: high)',
+          'Rythme tres irregulier lie aux etats emotionnels du moment',
+        ],
+      },
+      {
+        name: 'TDAH Impulsif', score: 42, category: 'TDAH', subcategory: 'impulsif',
         details: [
           'Demarrages de phrases sans planification',
-          'Corrections impulsives frequentes',
-          'Debit rapide avec ralentissements brutaux',
-        ],
-      },
-      {
-        name: 'Fluence / Regulation', score: 64, category: 'TDAH', subcategory: 'fluence',
-        details: [
-          '19 repetitions de "euh" ou "et puis"',
-          'Digressions hors sujet (parc -> chien -> chat -> jeu video -> soeur)',
-          'Rythme tres irregulier',
+          'Auto-correction rapide "chien non en fait c\'etait un chat"',
+          '19 repetitions de "euh" ou "et puis" (remplisseurs impulsifs)',
         ],
       },
       {
@@ -311,28 +311,28 @@ const RESULTS = [
         details: ['Aucun trouble phonologique'],
       },
       {
-        name: 'Attention / Concentration', score: 68, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Inattentif', score: 68, category: 'TDAH', subcategory: 'inattentif',
         details: [
-          'Oubli du contenu de la maitresse',
+          'Oubli du contenu de la maitresse (memoire de travail)',
           'Difficulte a organiser chronologiquement (bus/cantine/classe)',
           'Besoin de recommencer l\'explication du chocolat chaud',
         ],
       },
       {
-        name: 'Impulsivite verbale', score: 75, category: 'TDAH', subcategory: 'impulsivite',
+        name: 'TDAH Impulsif', score: 75, category: 'TDAH', subcategory: 'impulsif',
         details: [
-          'Reponses impulsives avant la fin de la reflexion',
+          'Reponses precipitees avant la fin de la reflexion',
           '3 changements de reponse en 5 secondes (voler/invisible/voler)',
-          'Interruptions de sa propre pensee',
-          'Exclamation spontanee "VOLER !"',
+          'Interruptions de sa propre pensee, phrases inachevees',
+          'Exclamation spontanee non filtree "VOLER !"',
         ],
       },
       {
-        name: 'Fluence / Regulation', score: 60, category: 'TDAH', subcategory: 'fluence',
+        name: 'TDAH Emotionnel', score: 55, category: 'TDAH', subcategory: 'emotionnel',
         details: [
-          'Debit variable : accelerations puis blocages',
-          'Recit desorganise mais contenu riche',
-          'Auto-corrections multiples',
+          'Exclamation enthousiaste intense "VOLER !"',
+          'Debit tres variable selon l\'etat emotionnel',
+          'Variations de prosodie liees a l\'excitation (pitchVariance: high)',
         ],
       },
       {
@@ -407,7 +407,7 @@ const RESULTS = [
         details: ['Aucune difficulte phonologique'],
       },
       {
-        name: 'Attention / Concentration', score: 10, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Inattentif', score: 10, category: 'TDAH', subcategory: 'inattentif',
         details: ['Excellente concentration, aucune perte de fil'],
       },
       {
@@ -466,7 +466,7 @@ const RESULTS = [
         details: ['Aucune difficulte phonologique'],
       },
       {
-        name: 'Attention / Concentration', score: 12, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Inattentif', score: 12, category: 'TDAH', subcategory: 'inattentif',
         details: ['Tres concentre sur son sujet, aucune distraction'],
       },
       {
@@ -577,10 +577,10 @@ const RESULTS = [
         details: ['Syntaxe correcte pour le niveau CE1'],
       },
       {
-        name: 'Attention / Concentration', score: 30, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Inattentif', score: 30, category: 'TDAH', subcategory: 'inattentif',
         details: [
-          'Quelques signes d\'inattention a confirmer',
-          'Reevaluation necessaire en mode oral',
+          'Quelques signes d\'inattention a confirmer (profil discret)',
+          'Reevaluation necessaire en mode oral ou expression libre',
         ],
       },
     ],
@@ -629,27 +629,27 @@ const RESULTS = [
         ],
       },
       {
-        name: 'Attention / Concentration', score: 82, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Inattentif', score: 82, category: 'TDAH', subcategory: 'inattentif',
         details: [
-          'Decrochage attentionnel a 5.2s (pause maximale)',
-          'Perte du fil : "de quoi on parlait ?"',
-          'Degradation nette en fin de texte (plus d\'erreurs)',
-          '20 interruptions en 52 secondes',
+          'Decrochage attentionnel a 5.2s (maxPauseDurationMs: 5200ms)',
+          'Perte du fil en milieu de lecture : "de quoi on parlait ?"',
+          'Degradation nette en fin de texte (accumulation des erreurs)',
+          '20 interruptions en 52 secondes, silence ratio 32%',
         ],
       },
       {
-        name: 'Fluence / Regulation', score: 78, category: 'TDAH', subcategory: 'fluence',
+        name: 'TDAH Impulsif', score: 65, category: 'TDAH', subcategory: 'impulsif',
         details: [
-          'Lecture tres lente (42 mots/min vs 80 attendu en CM1)',
-          'Multiples repetitions de syllabes "sa... sa..."',
-          'Rythme chaotique : acceleration -> longue pause -> reprise',
+          'Tentative de continuer malgre les erreurs sans s\'arreter',
+          'Pas de relecture spontanee, pas d\'auto-correction planifiee',
+          'Repetitions de syllabes "sa... sa..." = relance impulsive',
         ],
       },
       {
-        name: 'Impulsivite verbale', score: 65, category: 'TDAH', subcategory: 'impulsivite',
+        name: 'TDAH Emotionnel', score: 38, category: 'TDAH', subcategory: 'emotionnel',
         details: [
-          'Tentative de continuer malgre les erreurs',
-          'Pas de relecture spontanee',
+          'Rythme tres irregulier selon la difficulte emotionnelle du passage',
+          'Variation de prosodie marquee (pitchVariance: high)',
         ],
       },
     ],
@@ -682,30 +682,29 @@ const RESULTS = [
         details: ['Pas de trouble phonologique en expression orale'],
       },
       {
-        name: 'Attention / Concentration', score: 88, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Inattentif', score: 88, category: 'TDAH', subcategory: 'inattentif',
         details: [
-          '24 interruptions en 50 secondes',
-          'Perte du fil : "de quoi on parlait ?"',
+          '24 micro-interruptions en 50 secondes',
+          'Perte du fil narratif : "de quoi on parlait ?"',
           'Incapacite a maintenir un sujet plus de 8 secondes',
-          'Pause de 4.8s = decrochage attentionnel majeur',
+          'Pause de 4.8s = decrochage attentionnel majeur (maxPauseDurationMs)',
         ],
       },
       {
-        name: 'Impulsivite verbale', score: 80, category: 'TDAH', subcategory: 'impulsivite',
+        name: 'TDAH Impulsif', score: 80, category: 'TDAH', subcategory: 'impulsif',
         details: [
-          'Auto-corrections rapides : "grand noir enfin marron"',
-          'Demarrages sans planification',
+          'Auto-corrections impulsives : "grand noir enfin marron"',
+          'Demarrages sans planification, phrases inachevees',
           'Debit tres rapide par moments (130 mots/min)',
-          'Ajout compulsif de details ("fait pipi partout")',
+          'Ajouts compulsifs de details hors-sujet ("fait pipi partout")',
         ],
       },
       {
-        name: 'Fluence / Regulation', score: 85, category: 'TDAH', subcategory: 'fluence',
+        name: 'TDAH Emotionnel', score: 62, category: 'TDAH', subcategory: 'emotionnel',
         details: [
-          '16 occurrences de "euh" en 50 secondes',
-          'Rythme chaotique : acceleration -> pause -> acceleration',
-          'Digressions multiples (chien -> chaussure -> mere -> cri -> rire -> os -> croquettes -> pipi)',
-          'Incapacite a conclure le recit',
+          'Vocabulaire emotionnel fort : "trop en colere", "j\'ai rigole", "degoutant"',
+          'Transitions abruptes declenchees par des associations emotionnelles',
+          'Rythme tres irregulier lie aux etats emotionnels (pitchVariance: high)',
         ],
       },
       {
@@ -750,11 +749,11 @@ const RESULTS = [
         details: ['Lecture fidele au texte de reference'],
       },
       {
-        name: 'Attention / Concentration', score: 6, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Inattentif', score: 6, category: 'TDAH', subcategory: 'inattentif',
         details: ['Lecture soutenue et reguliere du debut a la fin'],
       },
       {
-        name: 'Fluence / Regulation', score: 5, category: 'TDAH', subcategory: 'fluence',
+        name: 'TDAH Impulsif', score: 5, category: 'TDAH', subcategory: 'impulsif',
         details: ['Debit fluide et regulier, 95 mots/min (norme CE2)'],
       },
       {
@@ -796,40 +795,30 @@ const RESULTS = [
         details: ['Aucun trouble phonologique'],
       },
       {
-        name: 'Attention / Concentration', score: 45, category: 'TDAH', subcategory: 'attention',
+        name: 'TDAH Impulsif', score: 78, category: 'TDAH', subcategory: 'impulsif',
+        details: [
+          'Reponses precipitees avant la fin de la reflexion : "RaphaelRouxdix"',
+          'Reponse impulsive au chocolat chaud puis auto-correction : "boum... non en vrai"',
+          'Onomatopee impulsive non filtree "boum"',
+          'Enumeration rapide sans pause (foot, courir, grimper, nager...)',
+          'Debit tres rapide (135 mots/min) avec pauses quasi-absentes',
+        ],
+      },
+      {
+        name: 'TDAH Emotionnel', score: 65, category: 'TDAH', subcategory: 'emotionnel',
+        details: [
+          'Enthousiasme excessif : "Flash ! Mega vite ! Trop long ! Trop dur !"',
+          'Vocabulaire emotionnel intensifie ("trop", "mega")',
+          'Interets restreints a forte charge emotionnelle (sport, mouvement)',
+          'References explicites a l\'agitation physique liee a l\'emotion ("je peux pas rester assis")',
+        ],
+      },
+      {
+        name: 'TDAH Inattentif', score: 35, category: 'TDAH', subcategory: 'inattentif',
         details: [
           'Difficulte a rester concentre en classe (rapport de la maitresse)',
-          'Agitation physique rapportee (bouger sur la chaise)',
           'Discours qui rebondit entre les idees',
-        ],
-      },
-      {
-        name: 'Impulsivite verbale', score: 72, category: 'TDAH', subcategory: 'impulsivite',
-        details: [
-          'Reponses precipitees : nom + age en un seul mot "RaphaelRouxdix"',
-          'Reponse impulsive au chocolat chaud puis auto-correction',
-          'Onomatopee impulsive "boum"',
-          'Enumeration rapide sans pause (foot, courir, grimper, nager...)',
-          'Explication incomplete necessitant correction',
-        ],
-      },
-      {
-        name: 'Fluence / Regulation', score: 55, category: 'TDAH', subcategory: 'fluence',
-        details: [
-          'Debit tres rapide (135 mots/min)',
-          'Tres peu de pauses, enchainement immediat',
-          'Difficulte a reguler le rythme',
-          'Exclamations frequentes marquant l\'excitation motrice',
-        ],
-      },
-      {
-        name: 'Hyperactivite motrice (indices verbaux)', score: 68, category: 'TDAH', subcategory: 'hyperactivite',
-        details: [
-          'References explicites a l\'agitation : "je bougeais sur ma chaise"',
-          'Choix du super-pouvoir lie au mouvement (courir mega vite)',
-          '"je peux pas rester assis c\'est trop dur"',
-          'Interets exclusivement physiques (foot, courir, grimper, nager)',
-          'Difficulte a rester immobile rapportee par l\'enseignante',
+          'Quelques signes d\'inattention presents mais non dominants',
         ],
       },
       {

@@ -1,10 +1,11 @@
 /**
  * Prompt Builder — Compose le prompt complet selon le mode d'analyse
  */
-import { AnalysisMode, AudioMetadata } from '../types';
+import { AnalysisMode, AudioMetadata, VideoMetadata } from '../types';
 import { getDysPrompt } from './dys';
 import { getTdahPrompt } from './tdah';
 import { getTsaPrompt } from './tsa';
+import { getVideoPrompt } from './video';
 
 interface PromptOptions {
   mode: AnalysisMode;
@@ -12,6 +13,7 @@ interface PromptOptions {
   referenceText?: string;
   hasImage: boolean;
   audioMetadata?: AudioMetadata;
+  videoMetadata?: VideoMetadata;
   studentAge?: number;
   topic?: string;            // For expression_libre
   questions?: string[];      // For conversation_guidee
@@ -79,12 +81,37 @@ function getAudioMetadataSection(meta: AudioMetadata): string {
 Utilise ces données pour affiner ton évaluation des marqueurs TDAH et TSA.`;
 }
 
+function getVideoMetadataSection(meta: VideoMetadata): string {
+  return `
+## Données vidéo extraites automatiquement (analyse comportementale)
+- Durée totale : ${Math.round(meta.totalDurationMs / 1000)}s
+- Contact visuel (ratio) : ${(meta.gazeContactRatio * 100).toFixed(0)}%
+- Durée regard détourné : ${Math.round(meta.gazeAvertedDurationMs / 1000)}s
+- Saccades oculaires : ${meta.saccadeCount}
+- Fréquence clignements : ${meta.blinkRate}/min
+- Variabilité expressions faciales : ${meta.facialExpressionVariability}
+- Congruence émotionnelle : ${meta.emotionalCongruence}
+- Fréquence sourires : ${meta.smileFrequency}/min
+- Index agitation céphalique : ${meta.headMovementIndex}/100
+- Fidgeting mains : ${meta.handFidgetingScore}/100
+- Changements de posture : ${meta.postureChangeFrequency}/min
+- Balancements corporels : ${meta.bodyRockingEvents}
+- Stéréotypies motrices : ${meta.stereotypyEvents}
+- Auto-stimulation (score) : ${meta.selfStimulationScore}/100
+- Latence de réponse moyenne : ${Math.round(meta.responseLatencyMs)}ms
+- Synchronie conversationnelle : ${meta.conversationalSynchrony}
+- Tour de parole : ${meta.turnTakingAppropriateness}
+
+Utilise ces données vidéo pour affiner ton évaluation des marqueurs TSA et TDAH.`;
+}
+
 export function buildAnalysisPrompt(opts: PromptOptions): string {
   const ageContext = opts.studentAge
     ? `L'élève a ${opts.studentAge} ans. Adapte tes attentes au niveau de développement correspondant à cet âge.`
     : '';
 
   const hasAudioMeta = !!opts.audioMetadata;
+  const hasVideoMeta = !!opts.videoMetadata;
 
   // Determine which disorder categories are most relevant for this mode
   const analyzeDys = opts.mode === 'dictee' || opts.mode === 'lecture_libre';
@@ -96,9 +123,11 @@ export function buildAnalysisPrompt(opts: PromptOptions): string {
     getDysPrompt(opts.hasImage),
     analyzeTdah ? getTdahPrompt(hasAudioMeta) : '',
     analyzeTsa ? getTsaPrompt(hasAudioMeta) : '',
+    hasVideoMeta ? getVideoPrompt() : '',
   ].filter(Boolean).join('\n');
 
   const audioSection = opts.audioMetadata ? getAudioMetadataSection(opts.audioMetadata) : '';
+  const videoSection = opts.videoMetadata ? getVideoMetadataSection(opts.videoMetadata) : '';
 
   // Build the expected output format dynamically
   const markerExamples = [
@@ -127,6 +156,14 @@ export function buildAnalysisPrompt(opts: PromptOptions): string {
     );
   }
 
+  if (hasVideoMeta) {
+    markerExamples.push(
+      '{ "name": "Contact visuel", "score": 0, "category": "TSA", "subcategory": "gaze", "details": [] }',
+      '{ "name": "Agitation motrice", "score": 0, "category": "TDAH", "subcategory": "motricite", "details": [] }',
+      '{ "name": "Stéréotypies", "score": 0, "category": "TSA", "subcategory": "stereotypies", "details": [] }',
+    );
+  }
+
   const disorderScreeningKeys = ['DYS'];
   if (analyzeTdah) disorderScreeningKeys.push('TDAH');
   if (analyzeTsa) disorderScreeningKeys.push('TSA');
@@ -152,6 +189,7 @@ ${getModeContext(opts)}
 
 ${opts.hasImage ? "De plus, tu disposes d'une photo d'un échantillon d'écriture manuscrite de ce même enfant.\n" : ""}
 ${audioSection}
+${videoSection}
 ${extractedFeaturesSection}
 ${opts.referenceProfilesText || ''}
 ---

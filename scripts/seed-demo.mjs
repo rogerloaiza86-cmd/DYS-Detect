@@ -1,336 +1,993 @@
 /**
- * Script de démonstration — insère 8 élèves fictifs avec analyses variées
- * Inclut des profils DYS, TDAH et TSA pour montrer le système multi-troubles
+ * Script de demonstration -- insere des eleves fictifs avec analyses variees
+ * Couvre tous les profils : DYS, TDAH, TSA, comorbidites, et controles sains
  * Usage : node scripts/seed-demo.mjs
  */
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import crypto from 'crypto';
 
-const SUPABASE_URL  = 'https://xrvehxoqcsgrjwcsdett.supabase.co';
-const SUPABASE_KEY  = 'sb_publishable_uhyAgPy4bSZZKfT2tQL1fA_6wttlYdI';
+// ── Load env vars from .env.local or process.env ────────────────────────────
+
+function loadEnv() {
+  try {
+    const envPath = resolve(process.cwd(), '.env.local');
+    const content = readFileSync(envPath, 'utf-8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      const val = trimmed.slice(eqIdx + 1).trim();
+      if (!process.env[key]) process.env[key] = val;
+    }
+  } catch {
+    // .env.local not found — rely on process.env
+  }
+}
+
+loadEnv();
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('Missing SUPABASE_URL or SUPABASE_ANON_KEY. Set them in .env.local or as environment variables.');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ─── Élèves fictifs ──────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const uuid = () => crypto.randomUUID();
+
+// Pre-generate stable IDs so we can cross-reference students <-> results <-> labels
+const S = {
+  lea:     uuid(),
+  hugo:    uuid(),
+  emma:    uuid(),
+  nathan:  uuid(),
+  chloe:   uuid(),
+  lucas:   uuid(),
+  jade:    uuid(),
+  raphael: uuid(),
+};
+
+// ── Eleves fictifs ───────────────────────────────────────────────────────────
 
 const STUDENTS = [
-  { id: 'demo-s1', first_name: 'Léa',     last_name: 'Martin',    initials: 'LM', grade: 'CE2', age: 8,  risk_level: 'Risque Élevé',  last_analysis_date: '20 mars 2026', is_ulis_student: true,  consent_status: 'signed' },
-  { id: 'demo-s2', first_name: 'Hugo',     last_name: 'Bernard',   initials: 'HB', grade: 'CM1', age: 9,  risk_level: 'Risque Modéré', last_analysis_date: '18 mars 2026', is_ulis_student: true,  consent_status: 'signed' },
-  { id: 'demo-s3', first_name: 'Emma',     last_name: 'Dubois',    initials: 'ED', grade: 'CP',  age: 6,  risk_level: 'Sain',          last_analysis_date: '15 mars 2026', is_ulis_student: false, consent_status: 'pending' },
-  { id: 'demo-s4', first_name: 'Nathan',   last_name: 'Petit',     initials: 'NP', grade: 'CM2', age: 11, risk_level: 'Risque Élevé',  last_analysis_date: '19 mars 2026', is_ulis_student: true,  consent_status: 'signed' },
-  { id: 'demo-s5', first_name: 'Chloé',    last_name: 'Moreau',    initials: 'CM', grade: 'CE1', age: 7,  risk_level: 'Risque Modéré', last_analysis_date: '17 mars 2026', is_ulis_student: false, consent_status: 'pending' },
-  { id: 'demo-s6', first_name: 'Lucas',    last_name: 'Lefebvre',  initials: 'LL', grade: 'CM1', age: 10, risk_level: 'Risque Élevé',  last_analysis_date: '21 mars 2026', is_ulis_student: true,  consent_status: 'signed' },
-  { id: 'demo-s7', first_name: 'Jade',     last_name: 'Garcia',    initials: 'JG', grade: 'CE2', age: 8,  risk_level: 'Sain',          last_analysis_date: '14 mars 2026', is_ulis_student: false, consent_status: 'pending' },
-  { id: 'demo-s8', first_name: 'Raphaël',  last_name: 'Roux',      initials: 'RR', grade: 'CM2', age: 11, risk_level: 'Risque Modéré', last_analysis_date: '20 mars 2026', is_ulis_student: true,  consent_status: 'signed' },
+  {
+    id: S.lea, first_name: 'Lea', last_name: 'Martin', initials: 'LM',
+    grade: 'CE2', age: 8,
+    risk_level: 'Risque Eleve',
+    last_analysis_date: '12 mars 2026',
+    is_ulis_student: true, consent_status: 'signed',
+    consent_date: '2025-09-10T10:00:00.000Z', consent_guardian_name: 'Mme Sylvie Martin',
+  },
+  {
+    id: S.hugo, first_name: 'Hugo', last_name: 'Bernard', initials: 'HB',
+    grade: 'CM2', age: 10,
+    risk_level: 'Risque Modere',
+    last_analysis_date: '08 mars 2026',
+    is_ulis_student: true, consent_status: 'signed',
+    consent_date: '2025-11-15T09:00:00.000Z', consent_guardian_name: 'M. Philippe Bernard',
+  },
+  {
+    id: S.emma, first_name: 'Emma', last_name: 'Dubois', initials: 'ED',
+    grade: 'CM1', age: 9,
+    risk_level: 'Sain',
+    last_analysis_date: '05 mars 2026',
+    is_ulis_student: false, consent_status: 'signed',
+    consent_date: '2026-02-20T14:00:00.000Z', consent_guardian_name: 'Mme Claire Dubois',
+  },
+  {
+    id: S.nathan, first_name: 'Nathan', last_name: 'Petit', initials: 'NP',
+    grade: '6eme', age: 11,
+    risk_level: 'Risque Eleve',
+    last_analysis_date: '15 mars 2026',
+    is_ulis_student: true, consent_status: 'signed',
+    consent_date: '2024-06-15T11:00:00.000Z', consent_guardian_name: 'Mme Nathalie Petit',
+  },
+  {
+    id: S.chloe, first_name: 'Chloe', last_name: 'Moreau', initials: 'CM',
+    grade: 'CE1', age: 7,
+    risk_level: 'Risque Modere',
+    last_analysis_date: '01 mars 2026',
+    is_ulis_student: false, consent_status: 'pending',
+    consent_date: null, consent_guardian_name: null,
+  },
+  {
+    id: S.lucas, first_name: 'Lucas', last_name: 'Lefebvre', initials: 'LL',
+    grade: 'CM1', age: 9,
+    risk_level: 'Risque Eleve',
+    last_analysis_date: '18 mars 2026',
+    is_ulis_student: true, consent_status: 'signed',
+    consent_date: '2025-10-05T08:30:00.000Z', consent_guardian_name: 'Mme Anne Lefebvre',
+  },
+  {
+    id: S.jade, first_name: 'Jade', last_name: 'Garcia', initials: 'JG',
+    grade: 'CE2', age: 8,
+    risk_level: 'Sain',
+    last_analysis_date: '28 fev. 2026',
+    is_ulis_student: false, consent_status: 'signed',
+    consent_date: '2026-02-15T16:00:00.000Z', consent_guardian_name: 'M. Carlos Garcia',
+  },
+  {
+    id: S.raphael, first_name: 'Raphael', last_name: 'Roux', initials: 'RR',
+    grade: 'CM2', age: 10,
+    risk_level: 'Risque Modere',
+    last_analysis_date: '10 mars 2026',
+    is_ulis_student: true, consent_status: 'signed',
+    consent_date: '2025-04-01T09:00:00.000Z', consent_guardian_name: 'M. Frederic Roux',
+  },
 ];
 
-// ─── Analyses fictives ───────────────────────────────────────────────────
+// ── Analyses fictives ────────────────────────────────────────────────────────
 
 const RESULTS = [
-  // ═══ Léa Martin — DYSLEXIE SÉVÈRE — 2 analyses (évolution) ═══════════
+
+  // =========================================================================
+  // Lea Martin -- DYSLEXIE + DYSORTHOGRAPHIE SEVERE -- 2 analyses
+  // =========================================================================
+
+  // Analysis 1: dictee -- high DYS scores with reference text comparison
   {
-    id: 'demo-r1a',
-    student_id: 'demo-s1',
-    date: new Date('2026-02-10').toISOString(),
-    global_risk_level: 'Risque Modéré',
+    id: uuid(),
+    student_id: S.lea,
+    date: new Date('2026-01-20').toISOString(),
+    global_risk_level: 'Risque Eleve',
     analysis_mode: 'dictee',
-    reference_text: 'Le petit chat boit son lait dans la cuisine.',
-    transcription: "Le beti sha boi son lè dan la kuizine.",
-    disorder_screening: { DYS: 'Risque Modéré' },
+    reference_text: 'Le petit chat boit son lait dans la cuisine. Maman prepare le repas du soir.',
+    transcription: "Le beti sha boi son le dan la kuizine. Manman brebarre le repa du soar.",
+    disorder_screening: { DYS: 'Risque Eleve', TDAH: 'Sain', TSA: 'Sain' },
+    audio_metadata: null,
     markers: [
-      { name: 'Dyslexie (Phonologie)', score: 62, category: 'DYS', subcategory: 'phonologie', details: ['Confusion ch/sh systématique', 'Substitution p/b sur "petit"→"beti"', 'Substitution c/k sur "cuisine"→"kuizine"'] },
-      { name: 'Dysorthographie', score: 55, category: 'DYS', subcategory: 'orthographe', details: ['Graphie phonétique de "lait"→"lè"', 'Confusion des graphèmes complexes'] },
-      { name: 'Dysphasie (Morphosyntaxe)', score: 20, category: 'DYS', subcategory: 'morphosyntaxe', details: ['Structure syntaxique préservée'] },
+      {
+        name: 'Dyslexie (Phonologie)', score: 82, category: 'DYS', subcategory: 'phonologie',
+        details: [
+          'Confusion systematique ch/sh : "chat" -> "sha"',
+          'Inversion consonne p/b : "petit" -> "beti"',
+          'Substitution c/k : "cuisine" -> "kuizine"',
+          'Confusion pr/br : "prepare" -> "brebarre"',
+          'Simplification vocalique : "lait" -> "le", "soir" -> "soar"',
+        ],
+      },
+      {
+        name: 'Dysorthographie', score: 78, category: 'DYS', subcategory: 'orthographe',
+        details: [
+          'Graphie phonetique generalisee',
+          'Absence des lettres muettes ("repas" -> "repa")',
+          'Doublement errone ("brebarre" au lieu de "prepare")',
+          'Confusion nasale : "maman" -> "manman"',
+        ],
+      },
+      {
+        name: 'Dysphasie (Morphosyntaxe)', score: 22, category: 'DYS', subcategory: 'morphosyntaxe',
+        details: ['Structure syntaxique globalement preservee', 'Deux phrases correctement segmentees'],
+      },
     ],
-    recommendations: ['Renforcer la conscience phonologique', 'Exercices de discrimination auditive ch/s, p/b', 'Bilan orthophonique recommandé'],
+    recommendations: [
+      'Bilan orthophonique complet recommande en urgence',
+      'Renforcer la conscience phonologique (discrimination auditive ch/s, p/b)',
+      'Exercices quotidiens de correspondance grapheme-phoneme',
+      'Adapter les supports ecrits (police OpenDyslexic, interlignes augmentes)',
+    ],
   },
+
+  // Analysis 2: lecture_libre -- reading difficulties
   {
-    id: 'demo-r1b',
-    student_id: 'demo-s1',
-    date: new Date('2026-03-20').toISOString(),
-    global_risk_level: 'Risque Élevé',
+    id: uuid(),
+    student_id: S.lea,
+    date: new Date('2026-03-12').toISOString(),
+    global_risk_level: 'Risque Eleve',
     analysis_mode: 'lecture_libre',
-    reference_text: "Ce matin, nous sommes allés nous promener dans la forêt. Les oiseaux chantaient dans les arbres. Nous avons ramassé des feuilles de toutes les couleurs.",
-    transcription: "Ce matin nous some alé nous bromener dans la forê. Les oiso chantè dan les arbe. Nous avon ramacé des feuye de toute les couleur.",
-    disorder_screening: { DYS: 'Risque Élevé', TDAH: 'Sain' },
-    audio_metadata: { totalDurationMs: 38000, pauseCount: 12, averagePauseDurationMs: 1800, maxPauseDurationMs: 4200, wordsPerMinute: 52, silenceRatio: 0.35, pitchVariance: 'normal', rhythmRegularity: 'irregular', speechRate: 'slow' },
+    reference_text: "Ce matin, nous sommes alles nous promener dans la foret. Les oiseaux chantaient dans les arbres. Nous avons ramasse des feuilles de toutes les couleurs.",
+    transcription: "Ce matin nous some ale nous bromener dans la fore. Les oiso chante dan les arbe. Nous avon ramace des feuye de toute les couleur.",
+    disorder_screening: { DYS: 'Risque Eleve', TDAH: 'Sain', TSA: 'Sain' },
+    audio_metadata: {
+      totalDurationMs: 42000, pauseCount: 14, averagePauseDurationMs: 1900,
+      maxPauseDurationMs: 4500, wordsPerMinute: 48, silenceRatio: 0.38,
+      pitchVariance: 'normal', rhythmRegularity: 'irregular', speechRate: 'slow',
+    },
     markers: [
-      { name: 'Dyslexie (Phonologie)', score: 82, category: 'DYS', subcategory: 'phonologie', details: ['Confusion pr/br sur "promener"→"bromener"', 'Omission consonnes finales multiples', 'Substitution eau/o sur "oiseaux"→"oiso"', 'Simplification des groupes consonantiques'] },
-      { name: 'Dysorthographie', score: 78, category: 'DYS', subcategory: 'orthographe', details: ['Graphies phonétiques systématiques', '"sommes"→"some", "chantaient"→"chantè"', 'Absence de marques du pluriel'] },
-      { name: 'Dysphasie (Morphosyntaxe)', score: 30, category: 'DYS', subcategory: 'morphosyntaxe', details: ['Structure de phrase globalement maintenue', 'Quelques omissions de mots grammaticaux'] },
-      { name: 'Attention / Concentration', score: 18, category: 'TDAH', subcategory: 'attention', details: ['Pas de dégradation progressive notable'] },
+      {
+        name: 'Dyslexie (Phonologie)', score: 85, category: 'DYS', subcategory: 'phonologie',
+        details: [
+          'Confusion pr/br sur "promener" -> "bromener"',
+          'Omission consonnes finales multiples : "foret" -> "fore"',
+          'Substitution eau/o : "oiseaux" -> "oiso"',
+          'Simplification groupes consonantiques : "arbres" -> "arbe"',
+          'Elision de syllabes : "feuilles" -> "feuye"',
+        ],
+      },
+      {
+        name: 'Dysorthographie', score: 80, category: 'DYS', subcategory: 'orthographe',
+        details: [
+          'Graphies phonetiques systematiques',
+          '"sommes" -> "some", "chantaient" -> "chante"',
+          'Absence systematique des marques du pluriel',
+          'Erreurs sur tous les mots de plus de 2 syllabes',
+        ],
+      },
+      {
+        name: 'Dysphasie (Morphosyntaxe)', score: 28, category: 'DYS', subcategory: 'morphosyntaxe',
+        details: ['Structure de phrase globalement maintenue', 'Quelques omissions de mots grammaticaux'],
+      },
+      {
+        name: 'Attention / Concentration', score: 15, category: 'TDAH', subcategory: 'attention',
+        details: ['Pas de degradation progressive notable', 'Effort soutenu malgre les difficultes'],
+      },
     ],
-    recommendations: ['Prise en charge orthophonique urgente', 'Tiers-temps pour les évaluations', 'Logiciel de synthèse vocale pour la lecture', 'Aménagements PAP à formaliser'],
+    recommendations: [
+      'Prise en charge orthophonique urgente (3 seances/semaine)',
+      'Tiers-temps pour les evaluations ecrites',
+      'Logiciel de synthese vocale pour la lecture (ex: VoxyGen)',
+      'Amenagements PAP a formaliser avec equipe pedagogique',
+      'Envisager un suivi en psychomotricite',
+    ],
   },
 
-  // ═══ Hugo Bernard — TDAH PRÉDOMINANT — 2 analyses ════════════════════
+  // =========================================================================
+  // Hugo Bernard -- TDAH PREDOMINANT INATTENTIF -- 2 analyses
+  // =========================================================================
+
+  // Analysis 1: expression_libre -- attention/concentration markers, topic shifts
   {
-    id: 'demo-r2a',
-    student_id: 'demo-s2',
-    date: new Date('2026-02-20').toISOString(),
-    global_risk_level: 'Risque Modéré',
+    id: uuid(),
+    student_id: S.hugo,
+    date: new Date('2026-01-28').toISOString(),
+    global_risk_level: 'Risque Modere',
     analysis_mode: 'expression_libre',
-    transcription: "Alors euh hier je suis allé euh au parc et puis et puis y avait un chien non en fait c'était un chat enfin je sais plus mais il était grand et euh... qu'est-ce que je disais... ah oui et après on est rentré et j'ai joué à... à... un jeu vidéo je crois.",
-    disorder_screening: { DYS: 'Sain', TDAH: 'Risque Modéré', TSA: 'Sain' },
-    audio_metadata: { totalDurationMs: 42000, pauseCount: 18, averagePauseDurationMs: 800, maxPauseDurationMs: 3800, wordsPerMinute: 95, silenceRatio: 0.22, pitchVariance: 'high', rhythmRegularity: 'very_irregular', speechRate: 'fast' },
+    transcription: "Alors euh hier je suis alle euh au parc et puis et puis y avait un chien non en fait c'etait un chat enfin je sais plus mais il etait grand et euh... qu'est-ce que je disais... ah oui et apres on est rentre et j'ai joue a... a... un jeu video je crois. Et euh aussi ma soeur elle a... non c'est pas important. Voila.",
+    disorder_screening: { DYS: 'Sain', TDAH: 'Risque Modere', TSA: 'Sain' },
+    audio_metadata: {
+      totalDurationMs: 45000, pauseCount: 19, averagePauseDurationMs: 850,
+      maxPauseDurationMs: 3800, wordsPerMinute: 98, silenceRatio: 0.24,
+      pitchVariance: 'high', rhythmRegularity: 'very_irregular', speechRate: 'fast',
+    },
     markers: [
-      { name: 'Dyslexie (Phonologie)', score: 12, category: 'DYS', subcategory: 'phonologie', details: ['Pas de trouble phonologique'] },
-      { name: 'Attention / Concentration', score: 68, category: 'TDAH', subcategory: 'attention', details: ['Perte du fil narratif ("qu\'est-ce que je disais")', 'Auto-correction "chien non en fait c\'était un chat"', 'Incapacité à terminer les idées'] },
-      { name: 'Impulsivité verbale', score: 55, category: 'TDAH', subcategory: 'impulsivite', details: ['Démarrages de phrases sans planification', 'Corrections impulsives fréquentes', 'Débit rapide avec ralentissements brutaux'] },
-      { name: 'Fluence / Régulation', score: 62, category: 'TDAH', subcategory: 'fluence', details: ['17 répétitions de "euh" ou "et puis"', 'Digressions hors sujet (chien→chat→jeu vidéo)', 'Rythme très irrégulier'] },
-      { name: 'Pragmatique du langage', score: 15, category: 'TSA', subcategory: 'pragmatique', details: ['Langage socialement adapté malgré la désorganisation'] },
+      {
+        name: 'Dyslexie (Phonologie)', score: 10, category: 'DYS', subcategory: 'phonologie',
+        details: ['Pas de trouble phonologique identifie'],
+      },
+      {
+        name: 'Attention / Concentration', score: 70, category: 'TDAH', subcategory: 'attention',
+        details: [
+          'Perte du fil narratif : "qu\'est-ce que je disais..."',
+          'Auto-correction "chien non en fait c\'etait un chat"',
+          'Abandon d\'idee : "ma soeur elle a... non c\'est pas important"',
+          'Incapacite a terminer les idees avant d\'en commencer d\'autres',
+        ],
+      },
+      {
+        name: 'Impulsivite verbale', score: 58, category: 'TDAH', subcategory: 'impulsivite',
+        details: [
+          'Demarrages de phrases sans planification',
+          'Corrections impulsives frequentes',
+          'Debit rapide avec ralentissements brutaux',
+        ],
+      },
+      {
+        name: 'Fluence / Regulation', score: 64, category: 'TDAH', subcategory: 'fluence',
+        details: [
+          '19 repetitions de "euh" ou "et puis"',
+          'Digressions hors sujet (parc -> chien -> chat -> jeu video -> soeur)',
+          'Rythme tres irregulier',
+        ],
+      },
+      {
+        name: 'Pragmatique du langage', score: 14, category: 'TSA', subcategory: 'pragmatique',
+        details: ['Langage socialement adapte malgre la desorganisation'],
+      },
     ],
-    recommendations: ['Évaluation neuropsychologique pour TDAH', 'Techniques de structuration du discours', 'Timer visuel pour les exercices', 'Place préférentielle en classe (premier rang)'],
-  },
-  {
-    id: 'demo-r2b',
-    student_id: 'demo-s2',
-    date: new Date('2026-03-18').toISOString(),
-    global_risk_level: 'Risque Modéré',
-    analysis_mode: 'conversation_guidee',
-    transcription: "Q: Comment tu t'appelles ? R: Hugo Bernard j'ai 9 ans. Q: Qu'est-ce que tu as fait ce matin ? R: Ce matin euh... j'ai... ah oui le bus et puis la cantine non d'abord la classe et la maîtresse elle a dit un truc mais j'ai oublié quoi. Q: Si tu avais un super-pouvoir ? R: VOLER ! Non attends être invisible ! Non voler c'est mieux ! Ah je sais pas.",
-    disorder_screening: { DYS: 'Sain', TDAH: 'Risque Modéré', TSA: 'Sain' },
-    audio_metadata: { totalDurationMs: 55000, pauseCount: 14, averagePauseDurationMs: 900, maxPauseDurationMs: 2800, wordsPerMinute: 110, silenceRatio: 0.18, pitchVariance: 'high', rhythmRegularity: 'very_irregular', speechRate: 'fast' },
-    markers: [
-      { name: 'Dyslexie (Phonologie)', score: 8, category: 'DYS', subcategory: 'phonologie', details: ['Aucun trouble phonologique'] },
-      { name: 'Attention / Concentration', score: 65, category: 'TDAH', subcategory: 'attention', details: ['Oubli de ce que la maîtresse a dit', 'Difficulté à organiser chronologiquement', 'Mélange bus/cantine/classe sans ordre'] },
-      { name: 'Impulsivité verbale', score: 72, category: 'TDAH', subcategory: 'impulsivite', details: ['Réponses avant la fin de la réflexion', '3 changements de réponse en 5 secondes (voler/invisible/voler)', 'Interruptions de sa propre pensée'] },
-      { name: 'Fluence / Régulation', score: 58, category: 'TDAH', subcategory: 'fluence', details: ['Débit variable : accélérations puis blocages', 'Récit désorganisé mais riche'] },
-      { name: 'Pragmatique du langage', score: 12, category: 'TSA', subcategory: 'pragmatique', details: ['Bonne interaction sociale, réponses en contexte'] },
+    recommendations: [
+      'Evaluation neuropsychologique pour TDAH (type inattentif)',
+      'Techniques de structuration du discours (cartes mentales)',
+      'Timer visuel pour les exercices oraux',
+      'Place preferentielle en classe (premier rang, pres de l\'enseignant)',
     ],
-    recommendations: ['Confirmer le diagnostic TDAH via bilan neuropsy', 'Stratégies de régulation (STOP-THINK-GO)', 'Routine de reformulation avant réponse', 'Possibilité de traitement médicamenteux à évaluer'],
   },
 
-  // ═══ Emma Dubois — PROFIL SAIN — 1 analyse ═══════════════════════════
+  // Analysis 2: conversation_guidee -- impulsivity markers
   {
-    id: 'demo-r3',
-    student_id: 'demo-s3',
-    date: new Date('2026-03-15').toISOString(),
+    id: uuid(),
+    student_id: S.hugo,
+    date: new Date('2026-03-08').toISOString(),
+    global_risk_level: 'Risque Modere',
+    analysis_mode: 'conversation_guidee',
+    transcription: "Q: Comment tu t'appelles ? R: Hugo Bernard j'ai 10 ans. Q: Qu'est-ce que tu as fait ce matin ? R: Ce matin euh... j'ai... ah oui le bus et puis la cantine non d'abord la classe et la maitresse elle a dit un truc mais j'ai oublie quoi. Q: Si tu avais un super-pouvoir ? R: VOLER ! Non attends etre invisible ! Non voler c'est mieux ! Ah je sais pas en fait. Q: Explique comment on fait un chocolat chaud ? R: Ben on met du lait et du chocolat et euh... on le met dans... attends je recommence. On prend du lait on le chauffe et euh... ah oui on met le chocolat dedans et on melange.",
+    disorder_screening: { DYS: 'Sain', TDAH: 'Risque Modere', TSA: 'Sain' },
+    audio_metadata: {
+      totalDurationMs: 58000, pauseCount: 15, averagePauseDurationMs: 950,
+      maxPauseDurationMs: 2800, wordsPerMinute: 115, silenceRatio: 0.19,
+      pitchVariance: 'high', rhythmRegularity: 'very_irregular', speechRate: 'fast',
+    },
+    markers: [
+      {
+        name: 'Dyslexie (Phonologie)', score: 8, category: 'DYS', subcategory: 'phonologie',
+        details: ['Aucun trouble phonologique'],
+      },
+      {
+        name: 'Attention / Concentration', score: 68, category: 'TDAH', subcategory: 'attention',
+        details: [
+          'Oubli du contenu de la maitresse',
+          'Difficulte a organiser chronologiquement (bus/cantine/classe)',
+          'Besoin de recommencer l\'explication du chocolat chaud',
+        ],
+      },
+      {
+        name: 'Impulsivite verbale', score: 75, category: 'TDAH', subcategory: 'impulsivite',
+        details: [
+          'Reponses impulsives avant la fin de la reflexion',
+          '3 changements de reponse en 5 secondes (voler/invisible/voler)',
+          'Interruptions de sa propre pensee',
+          'Exclamation spontanee "VOLER !"',
+        ],
+      },
+      {
+        name: 'Fluence / Regulation', score: 60, category: 'TDAH', subcategory: 'fluence',
+        details: [
+          'Debit variable : accelerations puis blocages',
+          'Recit desorganise mais contenu riche',
+          'Auto-corrections multiples',
+        ],
+      },
+      {
+        name: 'Pragmatique du langage', score: 12, category: 'TSA', subcategory: 'pragmatique',
+        details: ['Bonne interaction sociale, reponses en contexte, humour present'],
+      },
+    ],
+    recommendations: [
+      'Confirmer le diagnostic TDAH via bilan neuropsychologique',
+      'Strategies de regulation (methode STOP-THINK-GO)',
+      'Routine de reformulation avant de repondre',
+      'Envisager evaluation pour traitement medicamenteux',
+    ],
+  },
+
+  // =========================================================================
+  // Emma Dubois -- PROFIL SAIN (controle) -- 1 analyse
+  // =========================================================================
+
+  {
+    id: uuid(),
+    student_id: S.emma,
+    date: new Date('2026-03-05').toISOString(),
     global_risk_level: 'Sain',
     analysis_mode: 'dictee',
-    reference_text: 'Le petit chat boit son lait dans la cuisine.',
-    transcription: "Le petit chat boit son lait dans la cuisine.",
-    disorder_screening: { DYS: 'Sain' },
-    markers: [
-      { name: 'Dyslexie (Phonologie)', score: 5, category: 'DYS', subcategory: 'phonologie', details: ['Aucune erreur phonologique'] },
-      { name: 'Dysorthographie', score: 8, category: 'DYS', subcategory: 'orthographe', details: ['Transcription fidèle'] },
-      { name: 'Dysphasie (Morphosyntaxe)', score: 3, category: 'DYS', subcategory: 'morphosyntaxe', details: ['Excellente structure'] },
-    ],
-    recommendations: ['Aucune intervention nécessaire', 'Continuer la lecture plaisir quotidienne', 'Proposer des textes plus complexes pour stimuler la progression'],
-  },
-
-  // ═══ Nathan Petit — TSA + DYS — 3 analyses (évolution) ═══════════════
-  {
-    id: 'demo-r4a',
-    student_id: 'demo-s4',
-    date: new Date('2026-01-25').toISOString(),
-    global_risk_level: 'Risque Modéré',
-    analysis_mode: 'dictee',
-    reference_text: 'Le petit chat boit son lait dans la cuisine.',
-    transcription: "Le petit chat boit son lait dans la cuisine.",
-    disorder_screening: { DYS: 'Sain' },
-    markers: [
-      { name: 'Dyslexie (Phonologie)', score: 10, category: 'DYS', subcategory: 'phonologie', details: ['Lecture correcte mais mécanique'] },
-      { name: 'Dysorthographie', score: 12, category: 'DYS', subcategory: 'orthographe', details: ['Orthographe correcte'] },
-      { name: 'Dysphasie (Morphosyntaxe)', score: 8, category: 'DYS', subcategory: 'morphosyntaxe', details: ['RAS'] },
-    ],
-    recommendations: ['Mode dictée insuffisant pour évaluer ce profil', 'Passer en expression libre ou conversation guidée'],
-  },
-  {
-    id: 'demo-r4b',
-    student_id: 'demo-s4',
-    date: new Date('2026-02-20').toISOString(),
-    global_risk_level: 'Risque Élevé',
-    analysis_mode: 'expression_libre',
-    transcription: "Les dinosaures sont apparus il y a 230 millions d'années au Trias. Le T-Rex mesurait 12,3 mètres exactement. Il avait 60 dents. Les vélociraptors pesaient 15 kilogrammes. Le brachiosaure mesurait 26 mètres. Moi j'aime les dinosaures. Les dinosaures c'est mieux que les mammifères. Les dinosaures.",
-    disorder_screening: { DYS: 'Sain', TDAH: 'Sain', TSA: 'Risque Élevé' },
-    audio_metadata: { totalDurationMs: 35000, pauseCount: 4, averagePauseDurationMs: 600, maxPauseDurationMs: 1200, wordsPerMinute: 78, silenceRatio: 0.08, pitchVariance: 'low', rhythmRegularity: 'regular', speechRate: 'normal' },
-    markers: [
-      { name: 'Dyslexie (Phonologie)', score: 8, category: 'DYS', subcategory: 'phonologie', details: ['Aucune difficulté phonologique'] },
-      { name: 'Attention / Concentration', score: 15, category: 'TDAH', subcategory: 'attention', details: ['Très concentré sur son sujet'] },
-      { name: 'Prosodie', score: 75, category: 'TSA', subcategory: 'prosodie', details: ['Voix monotone tout au long', 'Absence totale de variation émotionnelle', 'Débit régulier comme une lecture de liste'] },
-      { name: 'Pragmatique du langage', score: 82, category: 'TSA', subcategory: 'pragmatique', details: ['Persévération sur les dinosaures (intérêt restreint)', 'Énumération de faits sans narration', 'Absence de perspective : pas de lien avec l\'interlocuteur', 'Pas de connecteurs de discours'] },
-      { name: 'Diversité lexicale', score: 70, category: 'TSA', subcategory: 'lexique', details: ['Vocabulaire très spécialisé (Trias, vélociraptors)', 'Registre inadapté pour 11 ans (style encyclopédique)', 'Répétition du mot "dinosaures" 4 fois'] },
-    ],
-    recommendations: ['Évaluation TSA par un Centre Ressource Autisme', 'Travail sur les habiletés sociales et conversationnelles', 'Utiliser les intérêts restreints comme levier pédagogique', 'Groupe de compétences sociales'],
-  },
-  {
-    id: 'demo-r4c',
-    student_id: 'demo-s4',
-    date: new Date('2026-03-19').toISOString(),
-    global_risk_level: 'Risque Élevé',
-    analysis_mode: 'conversation_guidee',
-    transcription: "Q: Comment tu t'appelles ? R: Nathan Petit, 11 ans, CM2. Q: Qu'est-ce que tu as fait ce matin ? R: Je me suis levé à 7h12, j'ai mangé des céréales Chocapic exactement 42 grammes, je me suis brossé les dents pendant 2 minutes, j'ai pris le bus numéro 7. Q: Si tu avais un super-pouvoir ? R: Les super-pouvoirs n'existent pas. C'est scientifiquement impossible. Q: Explique comment faire un chocolat chaud ? R: On prend 200ml de lait, on le met dans une casserole à 65 degrés, on ajoute 2 cuillères de cacao, on mélange 47 secondes.",
-    disorder_screening: { DYS: 'Sain', TDAH: 'Sain', TSA: 'Risque Élevé' },
-    audio_metadata: { totalDurationMs: 62000, pauseCount: 6, averagePauseDurationMs: 500, maxPauseDurationMs: 900, wordsPerMinute: 82, silenceRatio: 0.06, pitchVariance: 'low', rhythmRegularity: 'regular', speechRate: 'normal' },
-    markers: [
-      { name: 'Dyslexie (Phonologie)', score: 5, category: 'DYS', subcategory: 'phonologie', details: ['Aucune difficulté'] },
-      { name: 'Attention / Concentration', score: 10, category: 'TDAH', subcategory: 'attention', details: ['Excellente concentration, pas de perte de fil'] },
-      { name: 'Prosodie', score: 78, category: 'TSA', subcategory: 'prosodie', details: ['Voix monotone constante', 'Aucune variation émotionnelle même sur questions ludiques', 'Rythme mécanique régulier'] },
-      { name: 'Pragmatique du langage', score: 88, category: 'TSA', subcategory: 'pragmatique', details: ['Réponse ultra-littérale à la question super-pouvoir', 'Absence de jeu imaginatif', 'Précision excessive des détails (7h12, 42g, 47 secondes)', 'Pas d\'engagement émotionnel dans les réponses'] },
-      { name: 'Diversité lexicale', score: 65, category: 'TSA', subcategory: 'lexique', details: ['Vocabulaire précis mais registre inadapté (style technique)', 'Omniprésence des chiffres et mesures exactes'] },
-    ],
-    recommendations: ['Diagnostic TSA hautement probable — orienter vers CRA', 'Programme PECS ou Denver pour habiletés sociales', 'Scénarios sociaux pour la pragmatique conversationnelle', 'Aménagements : consignes explicites et visuelles', 'Valoriser la rigueur intellectuelle comme force'],
-  },
-
-  // ═══ Chloé Moreau — DYS LÉGER + signes TDAH — 1 analyse ══════════════
-  {
-    id: 'demo-r5',
-    student_id: 'demo-s5',
-    date: new Date('2026-03-17').toISOString(),
-    global_risk_level: 'Risque Modéré',
-    analysis_mode: 'lecture_libre',
-    reference_text: "Le chat mange la souris. Il court dans le jardin. Maman appelle le chat. Il revient vite.",
-    transcription: "Le chat manje la souris. Il cour dans le jardin. Maman abelle le chat. Il revient... euh... il revient vite. Ah non attends. Il revient vite !",
-    disorder_screening: { DYS: 'Risque Modéré', TDAH: 'Risque Modéré' },
-    audio_metadata: { totalDurationMs: 28000, pauseCount: 8, averagePauseDurationMs: 1100, maxPauseDurationMs: 3200, wordsPerMinute: 68, silenceRatio: 0.28, pitchVariance: 'normal', rhythmRegularity: 'irregular', speechRate: 'slow' },
-    markers: [
-      { name: 'Dyslexie (Phonologie)', score: 45, category: 'DYS', subcategory: 'phonologie', details: ['Confusion g/j sur "mange"→"manje"', 'Confusion p/b sur "appelle"→"abelle"', 'Omission de consonne finale "court"→"cour"'] },
-      { name: 'Dysorthographie', score: 38, category: 'DYS', subcategory: 'orthographe', details: ['Erreurs phonétiquement proches'] },
-      { name: 'Attention / Concentration', score: 48, category: 'TDAH', subcategory: 'attention', details: ['Pause longue de 3.2s au milieu de la lecture', 'Relecture et auto-correction ("ah non attends")'] },
-      { name: 'Fluence / Régulation', score: 42, category: 'TDAH', subcategory: 'fluence', details: ['Hésitation "euh" et reprise de la phrase', 'Débit irrégulier avec accélérations en fin de phrase'] },
-    ],
-    recommendations: ['Exercices de phonologie ciblés sur les consonnes sonores/sourdes', 'Stratégies de relecture active', 'Observer si les difficultés attentionnelles persistent', 'Réévaluation dans 3 mois'],
-  },
-
-  // ═══ Lucas Lefebvre — TDAH SÉVÈRE + DYS — 2 analyses ═════════════════
-  {
-    id: 'demo-r6a',
-    student_id: 'demo-s6',
-    date: new Date('2026-02-28').toISOString(),
-    global_risk_level: 'Risque Élevé',
-    analysis_mode: 'expression_libre',
-    transcription: "Donc euh j'ai euh mon chien il s'appelle euh Rex et il est euh... il est grand et noir enfin marron en fait je sais plus et euh hier il a mangé ma chaussure et ma mère elle était trop en colère et elle a crié et moi j'ai rigolé et euh... de quoi on parlait ? Ah oui Rex et euh il aime les os et euh les croquettes et euh...",
-    disorder_screening: { DYS: 'Sain', TDAH: 'Risque Élevé', TSA: 'Sain' },
-    audio_metadata: { totalDurationMs: 48000, pauseCount: 22, averagePauseDurationMs: 650, maxPauseDurationMs: 4500, wordsPerMinute: 125, silenceRatio: 0.20, pitchVariance: 'high', rhythmRegularity: 'very_irregular', speechRate: 'fast' },
-    markers: [
-      { name: 'Dyslexie (Phonologie)', score: 10, category: 'DYS', subcategory: 'phonologie', details: ['Pas de trouble phonologique'] },
-      { name: 'Attention / Concentration', score: 85, category: 'TDAH', subcategory: 'attention', details: ['22 interruptions en 48 secondes', 'Perte du fil ("de quoi on parlait ?")', 'Incapacité à maintenir un sujet plus de 10 secondes', 'Pause de 4.5s = décrochage attentionnel'] },
-      { name: 'Impulsivité verbale', score: 78, category: 'TDAH', subcategory: 'impulsivite', details: ['Auto-corrections rapides ("grand noir enfin marron")', 'Démarrages sans planification', 'Débit très rapide par moments (125 mots/min)'] },
-      { name: 'Fluence / Régulation', score: 82, category: 'TDAH', subcategory: 'fluence', details: ['14 occurrences de "euh" en 48s', 'Rythme chaotique : accélération → pause → accélération', 'Digressions (chien → chaussure → mère → rire → chien)'] },
-      { name: 'Pragmatique du langage', score: 18, category: 'TSA', subcategory: 'pragmatique', details: ['Langage social adapté, humour présent ("j\'ai rigolé")'] },
-    ],
-    recommendations: ['TDAH très probable — bilan neuropsychologique urgent', 'Méthylphénidate à discuter avec neuropédiatre', 'Aménagements immédiats : place au 1er rang, consignes courtes', 'Timer visuel + fidget autorisé', 'Plan de régulation émotionnelle'],
-  },
-  {
-    id: 'demo-r6b',
-    student_id: 'demo-s6',
-    date: new Date('2026-03-21').toISOString(),
-    global_risk_level: 'Risque Élevé',
-    analysis_mode: 'dictee',
-    reference_text: "Les scientifiques ont découvert une nouvelle espèce de papillon dans la forêt amazonienne.",
-    transcription: "Les siantifik on décuvèr une nouvèle espese de papion dans la forê... euh... amazoni... amazoniene.",
-    disorder_screening: { DYS: 'Risque Modéré', TDAH: 'Risque Élevé' },
-    markers: [
-      { name: 'Dyslexie (Phonologie)', score: 52, category: 'DYS', subcategory: 'phonologie', details: ['Simplification "scientifiques"→"siantifik"', 'Omission syllabique "papillon"→"papion"', '"découvert"→"décuvèr" (inversion voyelle)'] },
-      { name: 'Dysorthographie', score: 48, category: 'DYS', subcategory: 'orthographe', details: ['Graphies phonétiques', 'Difficultés avec mots complexes'] },
-      { name: 'Attention / Concentration', score: 75, category: 'TDAH', subcategory: 'attention', details: ['Décrochage sur "amazonienne" (mot long)', 'Hésitation longue avant le dernier mot', 'Davantage d\'erreurs en fin de phrase'] },
-      { name: 'Fluence / Régulation', score: 70, category: 'TDAH', subcategory: 'fluence', details: ['Dégradation progressive de la qualité', 'Effort cognitif visible sur les mots complexes'] },
-    ],
-    recommendations: ['Profil mixte TDAH + DYS à explorer', 'Bilan orthophonique en complément du bilan neuropsy', 'Textes segmentés (une phrase à la fois)', 'Reformulation avant écriture'],
-  },
-
-  // ═══ Jade Garcia — PROFIL SAIN — 1 analyse ═══════════════════════════
-  {
-    id: 'demo-r7',
-    student_id: 'demo-s7',
-    date: new Date('2026-03-14').toISOString(),
-    global_risk_level: 'Sain',
-    analysis_mode: 'expression_libre',
-    transcription: "Hier avec ma mamie on est allées au marché et on a acheté des fraises. Elles étaient super bonnes ! Après on a fait un gâteau ensemble, c'était trop rigolo parce que mamie elle a mis de la farine partout. Le gâteau il était au chocolat et j'en ai mangé deux parts.",
+    reference_text: 'Le petit chat boit son lait dans la cuisine. Maman prepare le repas du soir.',
+    transcription: "Le petit chat boit son lait dans la cuisine. Maman prepare le repas du soir.",
     disorder_screening: { DYS: 'Sain', TDAH: 'Sain', TSA: 'Sain' },
-    audio_metadata: { totalDurationMs: 32000, pauseCount: 5, averagePauseDurationMs: 700, maxPauseDurationMs: 1100, wordsPerMinute: 92, silenceRatio: 0.12, pitchVariance: 'normal', rhythmRegularity: 'regular', speechRate: 'normal' },
+    audio_metadata: null,
     markers: [
-      { name: 'Dyslexie (Phonologie)', score: 5, category: 'DYS', subcategory: 'phonologie', details: ['Aucune erreur'] },
-      { name: 'Attention / Concentration', score: 8, category: 'TDAH', subcategory: 'attention', details: ['Récit structuré et complet'] },
-      { name: 'Fluence / Régulation', score: 6, category: 'TDAH', subcategory: 'fluence', details: ['Débit fluide et régulier'] },
-      { name: 'Prosodie', score: 10, category: 'TSA', subcategory: 'prosodie', details: ['Intonation expressive et adaptée'] },
-      { name: 'Pragmatique du langage', score: 5, category: 'TSA', subcategory: 'pragmatique', details: ['Narration cohérente, émotions partagées, humour'] },
-      { name: 'Diversité lexicale', score: 8, category: 'TSA', subcategory: 'lexique', details: ['Vocabulaire riche et adapté à l\'âge'] },
+      {
+        name: 'Dyslexie (Phonologie)', score: 4, category: 'DYS', subcategory: 'phonologie',
+        details: ['Aucune erreur phonologique detectee'],
+      },
+      {
+        name: 'Dysorthographie', score: 6, category: 'DYS', subcategory: 'orthographe',
+        details: ['Transcription fidele au texte de reference'],
+      },
+      {
+        name: 'Dysphasie (Morphosyntaxe)', score: 3, category: 'DYS', subcategory: 'morphosyntaxe',
+        details: ['Excellente structure syntaxique'],
+      },
     ],
-    recommendations: ['Aucune inquiétude', 'Encourager la lecture et l\'expression écrite', 'Profil harmonieux pour CE2'],
+    recommendations: [
+      'Aucune intervention necessaire',
+      'Continuer la lecture plaisir quotidienne',
+      'Proposer des textes plus complexes pour stimuler la progression',
+    ],
   },
 
-  // ═══ Raphaël Roux — TSA LÉGER + TDAH LÉGER — 1 analyse ══════════════
+  // =========================================================================
+  // Nathan Petit -- TSA + DYS LEGER (comorbidite) -- 3 analyses
+  // =========================================================================
+
+  // Analysis 1: conversation_guidee -- pragmatic language issues, prosodie plate
   {
-    id: 'demo-r8',
-    student_id: 'demo-s8',
-    date: new Date('2026-03-20').toISOString(),
-    global_risk_level: 'Risque Modéré',
+    id: uuid(),
+    student_id: S.nathan,
+    date: new Date('2025-12-10').toISOString(),
+    global_risk_level: 'Risque Eleve',
     analysis_mode: 'conversation_guidee',
-    transcription: "Q: Comment tu t'appelles ? R: Raphaël. Q: Et ton nom de famille ? R: Roux. Q: Quel âge tu as ? R: 11. Q: Qu'est-ce que tu as fait ce matin ? R: Des maths. Q: Tu peux me raconter un peu plus ? R: On a fait des additions et des soustractions. C'était facile. Q: Si tu avais un super-pouvoir lequel tu choisirais ? R: Euh... je sais pas... peut-être être intelligent. Q: Plus intelligent ? R: Oui pour comprendre les gens. Parce que des fois je comprends pas pourquoi ils font des trucs bizarres.",
-    disorder_screening: { DYS: 'Sain', TDAH: 'Risque Modéré', TSA: 'Risque Modéré' },
-    audio_metadata: { totalDurationMs: 58000, pauseCount: 10, averagePauseDurationMs: 1500, maxPauseDurationMs: 3800, wordsPerMinute: 55, silenceRatio: 0.30, pitchVariance: 'low', rhythmRegularity: 'regular', speechRate: 'slow' },
+    transcription: "Q: Comment tu t'appelles ? R: Nathan Petit, 11 ans, 6eme. Q: Qu'est-ce que tu as fait ce matin ? R: Je me suis leve a 7h12, j'ai mange des cereales Chocapic exactement 42 grammes, je me suis brosse les dents pendant 2 minutes, j'ai pris le bus numero 7. Q: Si tu avais un super-pouvoir ? R: Les super-pouvoirs n'existent pas. C'est scientifiquement impossible. Q: Explique comment faire un chocolat chaud ? R: On prend 200ml de lait, on le met dans une casserole a 65 degres, on ajoute 2 cuilleres de cacao, on melange 47 secondes. Q: Qu'est-ce qui te rend heureux ? R: Quand mes Lego sont bien ranges par couleur.",
+    disorder_screening: { DYS: 'Sain', TDAH: 'Sain', TSA: 'Risque Eleve' },
+    audio_metadata: {
+      totalDurationMs: 65000, pauseCount: 6, averagePauseDurationMs: 500,
+      maxPauseDurationMs: 950, wordsPerMinute: 80, silenceRatio: 0.06,
+      pitchVariance: 'low', rhythmRegularity: 'regular', speechRate: 'normal',
+    },
     markers: [
-      { name: 'Dyslexie (Phonologie)', score: 8, category: 'DYS', subcategory: 'phonologie', details: ['Aucun trouble'] },
-      { name: 'Attention / Concentration', score: 40, category: 'TDAH', subcategory: 'attention', details: ['Réponses très courtes nécessitant des relances', 'Latence de réponse élevée (pauses longues)'] },
-      { name: 'Prosodie', score: 55, category: 'TSA', subcategory: 'prosodie', details: ['Voix relativement plate', 'Peu de variation émotionnelle', 'Débit lent et régulier'] },
-      { name: 'Pragmatique du langage', score: 58, category: 'TSA', subcategory: 'pragmatique', details: ['Réponses minimales sans élaboration spontanée', 'Insight intéressant ("comprendre les gens")', 'Difficulté à développer sans relance explicite', 'Utilisation de "trucs bizarres" = difficulté à nommer les comportements sociaux'] },
-      { name: 'Diversité lexicale', score: 35, category: 'TSA', subcategory: 'lexique', details: ['Vocabulaire restreint mais approprié', 'Phrases courtes et simples'] },
+      {
+        name: 'Dyslexie (Phonologie)', score: 6, category: 'DYS', subcategory: 'phonologie',
+        details: ['Aucune difficulte phonologique'],
+      },
+      {
+        name: 'Attention / Concentration', score: 10, category: 'TDAH', subcategory: 'attention',
+        details: ['Excellente concentration, aucune perte de fil'],
+      },
+      {
+        name: 'Prosodie', score: 80, category: 'TSA', subcategory: 'prosodie',
+        details: [
+          'Voix monotone constante tout au long de l\'entretien',
+          'Aucune variation emotionnelle meme sur questions ludiques',
+          'Rythme mecanique et regulier comme une lecture de liste',
+          'Absence d\'intonation interrogative ou exclamative',
+        ],
+      },
+      {
+        name: 'Pragmatique du langage', score: 88, category: 'TSA', subcategory: 'pragmatique',
+        details: [
+          'Reponse ultra-litterale a la question du super-pouvoir',
+          'Absence totale de jeu imaginatif',
+          'Precision excessive des details (7h12, 42g, 47 secondes)',
+          'Pas d\'engagement emotionnel dans les reponses',
+          'Interet restreint pour le rangement/ordre (Lego par couleur)',
+        ],
+      },
+      {
+        name: 'Diversite lexicale', score: 62, category: 'TSA', subcategory: 'lexique',
+        details: [
+          'Vocabulaire precis mais registre formel inadapte pour 11 ans',
+          'Omnipresence des chiffres et mesures exactes',
+          'Style encyclopedique plutot que conversationnel',
+        ],
+      },
     ],
-    recommendations: ['Profil TSA léger / Asperger à évaluer', 'Groupe d\'habiletés sociales recommandé', 'Travail sur l\'élaboration des réponses', 'Exploiter son insight comme levier thérapeutique', 'Bilan au CRA si ce n\'est pas déjà fait'],
+    recommendations: [
+      'Evaluation TSA par un Centre Ressource Autisme (CRA)',
+      'Travail sur les habiletes sociales et conversationnelles',
+      'Programme de competences sociales en petit groupe',
+      'Amenagements : consignes explicites, supports visuels',
+    ],
+  },
+
+  // Analysis 2: expression_libre -- low lexical diversity, perseveration
+  {
+    id: uuid(),
+    student_id: S.nathan,
+    date: new Date('2026-02-05').toISOString(),
+    global_risk_level: 'Risque Eleve',
+    analysis_mode: 'expression_libre',
+    transcription: "Les dinosaures sont apparus il y a 230 millions d'annees au Trias. Le T-Rex mesurait 12,3 metres exactement. Il avait 60 dents. Les velociraptors pesaient 15 kilogrammes. Le brachiosaure mesurait 26 metres. Moi j'aime les dinosaures. Les dinosaures c'est mieux que les mammiferes. Les dinosaures sont les plus grands animaux terrestres. J'ai 47 figurines de dinosaures chez moi.",
+    disorder_screening: { DYS: 'Sain', TDAH: 'Sain', TSA: 'Risque Eleve' },
+    audio_metadata: {
+      totalDurationMs: 38000, pauseCount: 4, averagePauseDurationMs: 600,
+      maxPauseDurationMs: 1200, wordsPerMinute: 78, silenceRatio: 0.08,
+      pitchVariance: 'low', rhythmRegularity: 'regular', speechRate: 'normal',
+    },
+    markers: [
+      {
+        name: 'Dyslexie (Phonologie)', score: 8, category: 'DYS', subcategory: 'phonologie',
+        details: ['Aucune difficulte phonologique'],
+      },
+      {
+        name: 'Attention / Concentration', score: 12, category: 'TDAH', subcategory: 'attention',
+        details: ['Tres concentre sur son sujet, aucune distraction'],
+      },
+      {
+        name: 'Prosodie', score: 76, category: 'TSA', subcategory: 'prosodie',
+        details: [
+          'Voix monotone tout au long de la narration',
+          'Absence totale de variation emotionnelle',
+          'Debit regulier comme une lecture de liste encyclopedique',
+        ],
+      },
+      {
+        name: 'Pragmatique du langage', score: 84, category: 'TSA', subcategory: 'pragmatique',
+        details: [
+          'Perseveration marquee sur les dinosaures (interet restreint)',
+          'Enumeration de faits sans structure narrative',
+          'Absence de perspective : pas de lien avec l\'interlocuteur',
+          'Pas de connecteurs de discours (donc, ensuite, par contre...)',
+          'Quantification obsessionnelle (47 figurines)',
+        ],
+      },
+      {
+        name: 'Diversite lexicale', score: 72, category: 'TSA', subcategory: 'lexique',
+        details: [
+          'Vocabulaire tres specialise (Trias, velociraptors, brachiosaure)',
+          'Registre inadapte pour son age (style encyclopedique)',
+          'Repetition du mot "dinosaures" 5 fois',
+        ],
+      },
+    ],
+    recommendations: [
+      'Confirme le profil TSA observe en conversation guidee',
+      'Utiliser les interets restreints comme levier pedagogique',
+      'Travail sur la diversification des sujets de conversation',
+      'Exercices de narration avec structure debut-milieu-fin',
+    ],
+  },
+
+  // Analysis 3: dictee -- mild DYS markers
+  {
+    id: uuid(),
+    student_id: S.nathan,
+    date: new Date('2026-03-15').toISOString(),
+    global_risk_level: 'Risque Modere',
+    analysis_mode: 'dictee',
+    reference_text: 'Les scientifiques ont decouvert une nouvelle espece de papillon dans la foret amazonienne.',
+    transcription: "Les scientifiques ont decouvert une nouvelle espece de papillon dans la foret amazoniene.",
+    disorder_screening: { DYS: 'Risque Modere', TDAH: 'Sain', TSA: 'Sain' },
+    audio_metadata: null,
+    markers: [
+      {
+        name: 'Dyslexie (Phonologie)', score: 32, category: 'DYS', subcategory: 'phonologie',
+        details: [
+          'Legere difficulte sur les doubles consonnes',
+          'Simplification "amazonienne" -> "amazoniene" (perte du doublement)',
+        ],
+      },
+      {
+        name: 'Dysorthographie', score: 28, category: 'DYS', subcategory: 'orthographe',
+        details: [
+          'Quelques erreurs orthographiques sur mots complexes',
+          'Bonne maitrise globale de l\'orthographe courante',
+        ],
+      },
+      {
+        name: 'Dysphasie (Morphosyntaxe)', score: 8, category: 'DYS', subcategory: 'morphosyntaxe',
+        details: ['Structure syntaxique parfaitement maitrisee'],
+      },
+    ],
+    recommendations: [
+      'DYS leger en complement du profil TSA dominant',
+      'Exercices cibles sur les consonnes doubles',
+      'Continuer le suivi orthophonique pour consolider',
+    ],
+  },
+
+  // =========================================================================
+  // Chloe Moreau -- DYS LEGER + signes TDAH, consentement en attente -- 1 analyse
+  // =========================================================================
+
+  {
+    id: uuid(),
+    student_id: S.chloe,
+    date: new Date('2026-03-01').toISOString(),
+    global_risk_level: 'Risque Modere',
+    analysis_mode: 'dictee',
+    reference_text: "Le chat mange la souris. Il court dans le jardin. Maman appelle le chat.",
+    transcription: "Le chat manje la souris. Il cour dans le jardin. Maman abelle le chat.",
+    disorder_screening: { DYS: 'Risque Modere', TDAH: 'Sain', TSA: 'Sain' },
+    audio_metadata: null,
+    markers: [
+      {
+        name: 'Dyslexie (Phonologie)', score: 48, category: 'DYS', subcategory: 'phonologie',
+        details: [
+          'Confusion g/j sur "mange" -> "manje"',
+          'Confusion p/b sur "appelle" -> "abelle"',
+          'Omission de consonne finale "court" -> "cour"',
+        ],
+      },
+      {
+        name: 'Dysorthographie', score: 40, category: 'DYS', subcategory: 'orthographe',
+        details: [
+          'Erreurs phonetiquement proches mais systematiques',
+          'Difficulte avec les consonnes sourdes/sonores',
+        ],
+      },
+      {
+        name: 'Dysphasie (Morphosyntaxe)', score: 15, category: 'DYS', subcategory: 'morphosyntaxe',
+        details: ['Syntaxe correcte pour le niveau CE1'],
+      },
+      {
+        name: 'Attention / Concentration', score: 30, category: 'TDAH', subcategory: 'attention',
+        details: [
+          'Quelques signes d\'inattention a confirmer',
+          'Reevaluation necessaire en mode oral',
+        ],
+      },
+    ],
+    recommendations: [
+      'Exercices de phonologie cibles sur consonnes sonores/sourdes (g/j, p/b)',
+      'Strategies de relecture active apres ecriture',
+      'Observer si les difficultes attentionnelles persistent en classe',
+      'Reevaluation dans 3 mois en mode lecture libre ou conversation',
+      'Obtenir le consentement parental pour poursuivre le suivi',
+    ],
+  },
+
+  // =========================================================================
+  // Lucas Lefebvre -- TDAH SEVERE COMBINE + DYS -- 2 analyses
+  // =========================================================================
+
+  // Analysis 1: lecture_libre -- fluence issues + attention drops
+  {
+    id: uuid(),
+    student_id: S.lucas,
+    date: new Date('2026-02-15').toISOString(),
+    global_risk_level: 'Risque Eleve',
+    analysis_mode: 'lecture_libre',
+    reference_text: "Le renard roux traverse la riviere pour rejoindre sa taniere. Il porte un poisson dans sa gueule. Ses petits l'attendent patiemment.",
+    transcription: "Le renar rou traverse la... euh... la rividre pour rejoinde sa tanidre. Il borte un boison dans sa... sa... gueule. Ses betits l'at... euh de quoi on parlait ? Ah oui. Ses betits l'atandent bacianment.",
+    disorder_screening: { DYS: 'Risque Modere', TDAH: 'Risque Eleve', TSA: 'Sain' },
+    audio_metadata: {
+      totalDurationMs: 52000, pauseCount: 20, averagePauseDurationMs: 750,
+      maxPauseDurationMs: 5200, wordsPerMinute: 42, silenceRatio: 0.32,
+      pitchVariance: 'high', rhythmRegularity: 'very_irregular', speechRate: 'slow',
+    },
+    markers: [
+      {
+        name: 'Dyslexie (Phonologie)', score: 55, category: 'DYS', subcategory: 'phonologie',
+        details: [
+          'Omission consonnes finales : "renard" -> "renar", "roux" -> "rou"',
+          'Confusion p/b systematique : "porte" -> "borte", "poisson" -> "boison", "petits" -> "betits", "patiemment" -> "bacianment"',
+          'Substitution de voyelle : "riviere" -> "rividre", "taniere" -> "tanidre"',
+        ],
+      },
+      {
+        name: 'Dysorthographie', score: 48, category: 'DYS', subcategory: 'orthographe',
+        details: [
+          'Erreurs phonetiques sur les consonnes sourdes/sonores',
+          'Degradation progressive de la qualite orthographique',
+        ],
+      },
+      {
+        name: 'Attention / Concentration', score: 82, category: 'TDAH', subcategory: 'attention',
+        details: [
+          'Decrochage attentionnel a 5.2s (pause maximale)',
+          'Perte du fil : "de quoi on parlait ?"',
+          'Degradation nette en fin de texte (plus d\'erreurs)',
+          '20 interruptions en 52 secondes',
+        ],
+      },
+      {
+        name: 'Fluence / Regulation', score: 78, category: 'TDAH', subcategory: 'fluence',
+        details: [
+          'Lecture tres lente (42 mots/min vs 80 attendu en CM1)',
+          'Multiples repetitions de syllabes "sa... sa..."',
+          'Rythme chaotique : acceleration -> longue pause -> reprise',
+        ],
+      },
+      {
+        name: 'Impulsivite verbale', score: 65, category: 'TDAH', subcategory: 'impulsivite',
+        details: [
+          'Tentative de continuer malgre les erreurs',
+          'Pas de relecture spontanee',
+        ],
+      },
+    ],
+    recommendations: [
+      'Bilan neuropsychologique urgent pour TDAH (type combine)',
+      'Bilan orthophonique en complement pour le profil DYS',
+      'Textes segmentes : une phrase a la fois avec pause obligatoire',
+      'Utiliser un guide de lecture (regle sous la ligne)',
+      'Amenagements immediats : tiers-temps, lecteur pour les consignes',
+    ],
+  },
+
+  // Analysis 2: expression_libre -- impulsivity + disorganized speech
+  {
+    id: uuid(),
+    student_id: S.lucas,
+    date: new Date('2026-03-18').toISOString(),
+    global_risk_level: 'Risque Eleve',
+    analysis_mode: 'expression_libre',
+    transcription: "Donc euh j'ai euh mon chien il s'appelle euh Rex et il est euh... il est grand et noir enfin marron en fait je sais plus et euh hier il a mange ma chaussure et ma mere elle etait trop en colere et elle a crie et moi j'ai rigole et euh... de quoi on parlait ? Ah oui Rex et euh il aime les os et euh les croquettes et euh... et aussi il fait pipi partout et c'est degoutant mais moi je l'aime quand meme et euh...",
+    disorder_screening: { DYS: 'Sain', TDAH: 'Risque Eleve', TSA: 'Sain' },
+    audio_metadata: {
+      totalDurationMs: 50000, pauseCount: 24, averagePauseDurationMs: 650,
+      maxPauseDurationMs: 4800, wordsPerMinute: 130, silenceRatio: 0.20,
+      pitchVariance: 'high', rhythmRegularity: 'very_irregular', speechRate: 'fast',
+    },
+    markers: [
+      {
+        name: 'Dyslexie (Phonologie)', score: 12, category: 'DYS', subcategory: 'phonologie',
+        details: ['Pas de trouble phonologique en expression orale'],
+      },
+      {
+        name: 'Attention / Concentration', score: 88, category: 'TDAH', subcategory: 'attention',
+        details: [
+          '24 interruptions en 50 secondes',
+          'Perte du fil : "de quoi on parlait ?"',
+          'Incapacite a maintenir un sujet plus de 8 secondes',
+          'Pause de 4.8s = decrochage attentionnel majeur',
+        ],
+      },
+      {
+        name: 'Impulsivite verbale', score: 80, category: 'TDAH', subcategory: 'impulsivite',
+        details: [
+          'Auto-corrections rapides : "grand noir enfin marron"',
+          'Demarrages sans planification',
+          'Debit tres rapide par moments (130 mots/min)',
+          'Ajout compulsif de details ("fait pipi partout")',
+        ],
+      },
+      {
+        name: 'Fluence / Regulation', score: 85, category: 'TDAH', subcategory: 'fluence',
+        details: [
+          '16 occurrences de "euh" en 50 secondes',
+          'Rythme chaotique : acceleration -> pause -> acceleration',
+          'Digressions multiples (chien -> chaussure -> mere -> cri -> rire -> os -> croquettes -> pipi)',
+          'Incapacite a conclure le recit',
+        ],
+      },
+      {
+        name: 'Pragmatique du langage', score: 15, category: 'TSA', subcategory: 'pragmatique',
+        details: ['Langage social adapte, humour present ("j\'ai rigole", "je l\'aime quand meme")'],
+      },
+    ],
+    recommendations: [
+      'TDAH combine tres probable -- bilan neuropsychologique en priorite',
+      'Methylphenidate a discuter avec neuropediatre',
+      'Amenagements immediats : place au 1er rang, consignes courtes et visuelles',
+      'Timer visuel + fidget autorise en classe',
+      'Plan de regulation emotionnelle et comportementale',
+    ],
+  },
+
+  // =========================================================================
+  // Jade Garcia -- PROFIL SAIN (controle) -- 1 analyse lecture_libre
+  // =========================================================================
+
+  {
+    id: uuid(),
+    student_id: S.jade,
+    date: new Date('2026-02-28').toISOString(),
+    global_risk_level: 'Sain',
+    analysis_mode: 'lecture_libre',
+    reference_text: "La petite fille marche dans la foret. Elle ramasse des champignons. Son panier est presque plein.",
+    transcription: "La petite fille marche dans la foret. Elle ramasse des champignons. Son panier est presque plein.",
+    disorder_screening: { DYS: 'Sain', TDAH: 'Sain', TSA: 'Sain' },
+    audio_metadata: {
+      totalDurationMs: 18000, pauseCount: 3, averagePauseDurationMs: 600,
+      maxPauseDurationMs: 900, wordsPerMinute: 95, silenceRatio: 0.10,
+      pitchVariance: 'normal', rhythmRegularity: 'regular', speechRate: 'normal',
+    },
+    markers: [
+      {
+        name: 'Dyslexie (Phonologie)', score: 5, category: 'DYS', subcategory: 'phonologie',
+        details: ['Aucune erreur phonologique'],
+      },
+      {
+        name: 'Dysorthographie', score: 4, category: 'DYS', subcategory: 'orthographe',
+        details: ['Lecture fidele au texte de reference'],
+      },
+      {
+        name: 'Attention / Concentration', score: 6, category: 'TDAH', subcategory: 'attention',
+        details: ['Lecture soutenue et reguliere du debut a la fin'],
+      },
+      {
+        name: 'Fluence / Regulation', score: 5, category: 'TDAH', subcategory: 'fluence',
+        details: ['Debit fluide et regulier, 95 mots/min (norme CE2)'],
+      },
+      {
+        name: 'Prosodie', score: 8, category: 'TSA', subcategory: 'prosodie',
+        details: ['Intonation expressive et adaptee au contenu'],
+      },
+      {
+        name: 'Pragmatique du langage', score: 5, category: 'TSA', subcategory: 'pragmatique',
+        details: ['Lecture expressive avec respect de la ponctuation'],
+      },
+    ],
+    recommendations: [
+      'Aucune inquietude',
+      'Encourager la lecture reguliere et variee',
+      'Profil harmonieux pour le CE2',
+    ],
+  },
+
+  // =========================================================================
+  // Raphael Roux -- TDAH HYPERACTIF-IMPULSIF MODERE -- 1 analyse
+  // =========================================================================
+
+  {
+    id: uuid(),
+    student_id: S.raphael,
+    date: new Date('2026-03-10').toISOString(),
+    global_risk_level: 'Risque Modere',
+    analysis_mode: 'conversation_guidee',
+    transcription: "Q: Comment tu t'appelles ? R: RaphaelRouxdix-- euh 10 ans ! Q: Qu'est-ce que tu as fait ce matin ? R: Des maths c'etait trop long et la maitresse elle parlait et moi je bougeais sur ma chaise et Thomas il m'a dit arrete et la maitresse elle a dit Raphael concentre-toi. Q: Si tu avais un super-pouvoir ? R: Courir mega vite ! Comme Flash ! Parce que je peux pas rester assis c'est trop dur. Q: Peux-tu m'expliquer comment on fait un chocolat chaud ? R: Facile ! Du lait du chocolat boum dans le micro-ondes termine ! ... Non en vrai faut le mettre dans une tasse d'abord. Et le faire chauffer. Et mettre le chocolat. Voila c'est bon. Q: Qu'est-ce qui te rend heureux ? R: Le foot ! Et courir ! Et grimper aux arbres ! Et nager ! Et...",
+    disorder_screening: { DYS: 'Sain', TDAH: 'Risque Modere', TSA: 'Sain' },
+    audio_metadata: {
+      totalDurationMs: 55000, pauseCount: 8, averagePauseDurationMs: 450,
+      maxPauseDurationMs: 1500, wordsPerMinute: 135, silenceRatio: 0.08,
+      pitchVariance: 'high', rhythmRegularity: 'irregular', speechRate: 'fast',
+    },
+    markers: [
+      {
+        name: 'Dyslexie (Phonologie)', score: 7, category: 'DYS', subcategory: 'phonologie',
+        details: ['Aucun trouble phonologique'],
+      },
+      {
+        name: 'Attention / Concentration', score: 45, category: 'TDAH', subcategory: 'attention',
+        details: [
+          'Difficulte a rester concentre en classe (rapport de la maitresse)',
+          'Agitation physique rapportee (bouger sur la chaise)',
+          'Discours qui rebondit entre les idees',
+        ],
+      },
+      {
+        name: 'Impulsivite verbale', score: 72, category: 'TDAH', subcategory: 'impulsivite',
+        details: [
+          'Reponses precipitees : nom + age en un seul mot "RaphaelRouxdix"',
+          'Reponse impulsive au chocolat chaud puis auto-correction',
+          'Onomatopee impulsive "boum"',
+          'Enumeration rapide sans pause (foot, courir, grimper, nager...)',
+          'Explication incomplete necessitant correction',
+        ],
+      },
+      {
+        name: 'Fluence / Regulation', score: 55, category: 'TDAH', subcategory: 'fluence',
+        details: [
+          'Debit tres rapide (135 mots/min)',
+          'Tres peu de pauses, enchainement immediat',
+          'Difficulte a reguler le rythme',
+          'Exclamations frequentes marquant l\'excitation motrice',
+        ],
+      },
+      {
+        name: 'Hyperactivite motrice (indices verbaux)', score: 68, category: 'TDAH', subcategory: 'hyperactivite',
+        details: [
+          'References explicites a l\'agitation : "je bougeais sur ma chaise"',
+          'Choix du super-pouvoir lie au mouvement (courir mega vite)',
+          '"je peux pas rester assis c\'est trop dur"',
+          'Interets exclusivement physiques (foot, courir, grimper, nager)',
+          'Difficulte a rester immobile rapportee par l\'enseignante',
+        ],
+      },
+      {
+        name: 'Pragmatique du langage', score: 10, category: 'TSA', subcategory: 'pragmatique',
+        details: ['Interaction sociale adaptee, enthousiaste, sens de l\'humour'],
+      },
+    ],
+    recommendations: [
+      'Profil TDAH a predominance hyperactive-impulsive a confirmer',
+      'Bilan neuropsychologique avec echelles de Conners',
+      'Autoriser le mouvement en classe (fidget, coussin dynamique)',
+      'Pauses motrices regulieres (missions de distribution, tableau)',
+      'Strategies de canalisation de l\'energie (responsabilites physiques)',
+      'Evaluer l\'impact sur les apprentissages avec l\'equipe pedagogique',
+    ],
   },
 ];
 
-// ─── Diagnostics confirmés (données d'entraînement) ─────────────────────
+// ── Diagnostics confirmes (donnees d'entrainement ULIS) ──────────────────────
 
 const LABELS = [
-  { id: 'lbl-01', student_id: 'demo-s1', disorder: 'DYS', subtype: 'dyslexie', confirmed_by: 'orthophoniste', confirmed_date: '2025-09-15', severity: 'severe', notes: 'Diagnostic posé en septembre 2025' },
-  { id: 'lbl-02', student_id: 'demo-s4', disorder: 'TSA', subtype: 'TSA-1', confirmed_by: 'CRA', confirmed_date: '2024-06-10', severity: 'modere', notes: 'TSA sans déficience intellectuelle (Asperger), QI 128' },
-  { id: 'lbl-03', student_id: 'demo-s6', disorder: 'TDAH', subtype: 'TDAH-C', confirmed_by: 'neuropsychologue', confirmed_date: '2025-11-20', severity: 'severe', notes: 'TDAH combiné, en attente de traitement médicamenteux' },
-  { id: 'lbl-04', student_id: 'demo-s2', disorder: 'TDAH', subtype: 'TDAH-I', confirmed_by: 'neuropsychologue', confirmed_date: '2026-01-08', severity: 'modere', notes: 'TDAH inattentif prédominant' },
-  { id: 'lbl-05', student_id: 'demo-s8', disorder: 'TSA', subtype: 'TSA-1', confirmed_by: 'CRA', confirmed_date: '2025-03-22', severity: 'leger', notes: 'Suspicion TSA léger, suivi en cours' },
+  // Lea Martin -- DYS confirme par orthophoniste
+  {
+    id: uuid(), student_id: S.lea, disorder: 'DYS', subtype: 'dyslexie',
+    confirmed_by: 'orthophoniste', confirmed_date: '2025-09-15',
+    severity: 'severe', notes: 'Dyslexie phonologique severe, diagnostic pose en septembre 2025',
+  },
+  {
+    id: uuid(), student_id: S.lea, disorder: 'DYS', subtype: 'dysorthographie',
+    confirmed_by: 'orthophoniste', confirmed_date: '2025-09-15',
+    severity: 'severe', notes: 'Dysorthographie associee a la dyslexie, meme bilan',
+  },
+
+  // Hugo Bernard -- TDAH confirme par neuropsychologue
+  {
+    id: uuid(), student_id: S.hugo, disorder: 'TDAH', subtype: 'TDAH-I',
+    confirmed_by: 'neuropsychologue', confirmed_date: '2026-01-08',
+    severity: 'modere', notes: 'TDAH predominant inattentif, diagnostic neuropsychologique janvier 2026',
+  },
+
+  // Nathan Petit -- TSA confirme par MDPH + DYS par orthophoniste
+  {
+    id: uuid(), student_id: S.nathan, disorder: 'TSA', subtype: 'TSA-1',
+    confirmed_by: 'MDPH', confirmed_date: '2024-06-10',
+    severity: 'modere', notes: 'TSA sans deficience intellectuelle (Asperger), QI 128, notification MDPH',
+  },
+  {
+    id: uuid(), student_id: S.nathan, disorder: 'DYS', subtype: 'dyslexie',
+    confirmed_by: 'orthophoniste', confirmed_date: '2025-03-20',
+    severity: 'leger', notes: 'Dyslexie legere en comorbidite avec TSA, difficultes sur les mots complexes',
+  },
+
+  // Lucas Lefebvre -- TDAH + DYS confirmes
+  {
+    id: uuid(), student_id: S.lucas, disorder: 'TDAH', subtype: 'TDAH-C',
+    confirmed_by: 'neuropsychologue', confirmed_date: '2025-11-20',
+    severity: 'severe', notes: 'TDAH combine severe, en attente de traitement medicamenteux',
+  },
+  {
+    id: uuid(), student_id: S.lucas, disorder: 'DYS', subtype: 'dyslexie',
+    confirmed_by: 'orthophoniste', confirmed_date: '2025-12-05',
+    severity: 'modere', notes: 'Dyslexie phonologique moderee, confusion sourdes/sonores persistante',
+  },
+
+  // Raphael Roux -- TDAH confirme
+  {
+    id: uuid(), student_id: S.raphael, disorder: 'TDAH', subtype: 'TDAH-H',
+    confirmed_by: 'neuropsychologue', confirmed_date: '2025-04-15',
+    severity: 'modere', notes: 'TDAH a predominance hyperactive-impulsive, suivi en cours',
+  },
 ];
 
-// ─── Insertion ─────────────────────────────────────────────────────────
+// ── Insertion ────────────────────────────────────────────────────────────────
 
 async function seed() {
-  console.log('🌱 DYS-Detect — Insertion des données de démonstration\n');
+  console.log('DYS-Detect -- Insertion des donnees de demonstration\n');
 
-  // Nettoyer les données demo existantes
-  const ids = STUDENTS.map(s => s.id);
-  console.log('🧹 Nettoyage des données existantes...');
+  // Safety check: only delete rows with demo IDs
+  const studentIds = STUDENTS.map(s => s.id);
 
-  await supabase.from('diagnostic_labels').delete().in('student_id', ids);
-  await supabase.from('analysis_results').delete().in('student_id', ids);
-  await supabase.from('students').delete().in('id', ids);
+  console.log('Nettoyage des donnees demo existantes...');
 
-  // Insérer les élèves
+  // Also clean any previously seeded demo data (old format IDs)
+  const oldDemoIds = [
+    'demo-s1', 'demo-s2', 'demo-s3', 'demo-s4',
+    'demo-s5', 'demo-s6', 'demo-s7', 'demo-s8',
+  ];
+  const allStudentIds = [...studentIds, ...oldDemoIds];
+
+  const { error: delLblErr } = await supabase.from('diagnostic_labels').delete().in('student_id', allStudentIds);
+  if (delLblErr) console.warn('Warning deleting labels:', delLblErr.message);
+
+  const { error: delResErr } = await supabase.from('analysis_results').delete().in('student_id', allStudentIds);
+  if (delResErr) console.warn('Warning deleting results:', delResErr.message);
+
+  const { error: delStuErr } = await supabase.from('students').delete().in('id', allStudentIds);
+  if (delStuErr) console.warn('Warning deleting students:', delStuErr.message);
+
+  console.log('Nettoyage termine.\n');
+
+  // Insert students
   const { error: stuErr } = await supabase.from('students').insert(STUDENTS);
   if (stuErr) {
-    console.error('❌ Erreur insertion élèves:', stuErr.message);
+    console.error('ERREUR insertion eleves:', stuErr.message);
     process.exit(1);
   }
-  console.log(`✅ ${STUDENTS.length} élèves insérés`);
+  console.log(`${STUDENTS.length} eleves inseres`);
 
-  // Insérer les résultats
+  // Insert analysis results
   const { error: resErr } = await supabase.from('analysis_results').insert(RESULTS);
   if (resErr) {
-    console.error('❌ Erreur insertion résultats:', resErr.message);
+    console.error('ERREUR insertion resultats:', resErr.message);
     process.exit(1);
   }
-  console.log(`✅ ${RESULTS.length} analyses insérées`);
+  console.log(`${RESULTS.length} analyses inserees`);
 
-  // Insérer les diagnostics
+  // Insert diagnostic labels
   const { error: lblErr } = await supabase.from('diagnostic_labels').insert(LABELS);
   if (lblErr) {
-    console.error('❌ Erreur insertion diagnostics:', lblErr.message);
+    console.error('ERREUR insertion diagnostics:', lblErr.message);
     process.exit(1);
   }
-  console.log(`✅ ${LABELS.length} diagnostics confirmés insérés`);
+  console.log(`${LABELS.length} diagnostics confirmes inseres`);
 
-  // Résumé
-  console.log('\n📊 Résumé des profils :');
-  console.log('─'.repeat(65));
+  // Summary
+  console.log('\nResume des profils :');
+  console.log('-'.repeat(80));
   for (const s of STUDENTS) {
     const count = RESULTS.filter(r => r.student_id === s.id).length;
-    const label = LABELS.find(l => l.student_id === s.id);
-    const emoji = s.risk_level === 'Risque Élevé' ? '🔴' : s.risk_level === 'Risque Modéré' ? '🟠' : s.risk_level === 'Sain' ? '🟢' : '⚪';
-    const diag = label ? ` [${label.disorder} ${label.subtype}]` : '';
-    const ulis = s.is_ulis_student ? ' 🏫ULIS' : '';
-    console.log(`  ${emoji} ${s.first_name.padEnd(9)} ${s.last_name.padEnd(10)} ${s.grade.padEnd(4)} ${s.age}ans  ${count} analyse(s)${diag}${ulis}`);
+    const labels = LABELS.filter(l => l.student_id === s.id);
+    const risk = s.risk_level === 'Risque Eleve' ? '[ELEVE]'
+               : s.risk_level === 'Risque Modere' ? '[MODERE]'
+               : s.risk_level === 'Sain' ? '[ SAIN ]'
+               : '[  ?  ]';
+    const diags = labels.length > 0
+      ? ' | Diag: ' + labels.map(l => `${l.disorder}(${l.subtype})`).join(', ')
+      : '';
+    const ulis = s.is_ulis_student ? ' | ULIS' : '';
+    const consent = s.consent_status === 'pending' ? ' | Consentement en attente' : '';
+    console.log(`  ${risk} ${s.first_name.padEnd(9)} ${s.last_name.padEnd(10)} ${s.grade.padEnd(5)} ${s.age}ans  ${count} analyse(s)${diags}${ulis}${consent}`);
   }
-  console.log('─'.repeat(65));
-  console.log('\n🎉 Base de données prête pour la démo !');
+  console.log('-'.repeat(80));
+
+  // Mode coverage summary
+  const modes = {};
+  for (const r of RESULTS) {
+    modes[r.analysis_mode] = (modes[r.analysis_mode] || 0) + 1;
+  }
+  console.log('\nCouverture des modes d\'analyse :');
+  for (const [mode, count] of Object.entries(modes)) {
+    console.log(`  ${mode}: ${count} analyse(s)`);
+  }
+
+  console.log(`\nTotal: ${STUDENTS.length} eleves, ${RESULTS.length} analyses, ${LABELS.length} diagnostics`);
+  console.log('Base de donnees prete pour la demo !');
 }
 
-seed().catch(console.error);
+seed().catch((err) => {
+  console.error('Erreur fatale:', err);
+  process.exit(1);
+});

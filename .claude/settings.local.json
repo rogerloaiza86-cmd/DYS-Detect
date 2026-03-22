@@ -12,7 +12,8 @@
       "Bash(node scripts/seed-demo.mjs)",
       "WebSearch",
       "Bash(grep -r \"diagnostic\\\\|diagnostiquer\\\\|diagnostiqué\\\\|diagnostics\\\\|détecter\\\\|détection\\\\|détecte\\\\|détecté\\\\|dépister\\\\|dépistage\\\\|DYS-Detect\" /c/Users/roger/Desktop/DYS-Detect/src --include=*.ts --include=*.tsx --include=*.json -n)",
-      "Bash(find /c/Users/roger/Desktop/DYS-Detect -type f \\\\\\(-name *.json -o -name *.md -o -name *.txt \\\\\\))"
+      "Bash(find /c/Users/roger/Desktop/DYS-Detect -type f \\\\\\(-name *.json -o -name *.md -o -name *.txt \\\\\\))",
+      "Bash(npx tsc:*)"
     ]
   }
 }

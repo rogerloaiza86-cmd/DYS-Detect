@@ -141,13 +141,45 @@ export interface FeatureVector {
 
   /** Score de pression estimée (0=très léger, 1=très appuyé/variable) */
   pressureScore: number | null;
+
+  // ═══ VIDEO / BEHAVIORAL FEATURES (from VideoMetadata) ═════════════════
+
+  /** Ratio de contact visuel maintenu (0-1) */
+  gazeContactRatio: number | null;
+
+  /** Fréquence de clignements par minute */
+  blinkRate: number | null;
+
+  /** Index d'agitation céphalique (0-100) */
+  headMovementIndex: number | null;
+
+  /** Score de fidgeting des mains (0-100) */
+  handFidgetingScore: number | null;
+
+  /** Fréquence des changements de posture par minute */
+  postureChangeFrequency: number | null;
+
+  /** Nombre d'événements de stéréotypies motrices */
+  stereotypyEvents: number | null;
+
+  /** Score composite d'auto-stimulation (0-100) */
+  selfStimulationScore: number | null;
+
+  /** Latence moyenne de réponse (ms) */
+  responseLatencyMs: number | null;
+
+  /** Score de variabilité des expressions faciales (0=plate, 50=normale, 100=élevée) */
+  facialExpressionVariabilityScore: number | null;
+
+  /** Score de synchronie conversationnelle (0=bonne, 50=modérée, 100=faible) */
+  conversationalSynchronyScore: number | null;
 }
 
 // ─── Feature Labels (for display) ────────────────────────────────────────
 
 export const FEATURE_LABELS: Record<keyof Omit<FeatureVector, 'studentId' | 'analysisId' | 'analysisMode' | 'studentAge' | 'date'>, {
   label: string;
-  category: 'Phonologie' | 'Morphosyntaxe' | 'Lexique' | 'Pragmatique' | 'Audio' | 'Graphomoteur';
+  category: 'Phonologie' | 'Morphosyntaxe' | 'Lexique' | 'Pragmatique' | 'Audio' | 'Graphomoteur' | 'Vidéo';
   unit: string;
   relevantFor: ('DYS' | 'TDAH' | 'TSA')[];
   description: string;
@@ -188,6 +220,16 @@ export const FEATURE_LABELS: Record<keyof Omit<FeatureVector, 'studentId' | 'ana
   crossingOutCount:         { label: 'Nombre de ratures',            category: 'Graphomoteur',  unit: 'n',    relevantFor: ['DYS'],          description: 'Ratures et surcharges visibles' },
   legibilityScore:          { label: 'Lisibilité globale',           category: 'Graphomoteur',  unit: '0-1',  relevantFor: ['DYS'],          description: '0 = illisible, 1 = parfait' },
   pressureScore:            { label: 'Pression estimée',             category: 'Graphomoteur',  unit: '0-1',  relevantFor: ['DYS'],          description: '0 = léger, 1 = très appuyé/variable' },
+  gazeContactRatio:         { label: 'Contact visuel',               category: 'Vidéo',         unit: '0-1',  relevantFor: ['TSA'],          description: 'Ratio de temps avec contact visuel maintenu' },
+  blinkRate:                { label: 'Fréquence clignements',        category: 'Vidéo',         unit: '/min', relevantFor: ['TSA', 'TDAH'],  description: 'Clignements par minute' },
+  headMovementIndex:        { label: 'Agitation céphalique',         category: 'Vidéo',         unit: '0-100',relevantFor: ['TDAH'],         description: 'Index d\'agitation des mouvements de tête' },
+  handFidgetingScore:       { label: 'Fidgeting mains',              category: 'Vidéo',         unit: '0-100',relevantFor: ['TDAH'],         description: 'Score d\'agitation des mains' },
+  postureChangeFrequency:   { label: 'Changements de posture',       category: 'Vidéo',         unit: '/min', relevantFor: ['TDAH'],         description: 'Fréquence des changements de posture' },
+  stereotypyEvents:         { label: 'Stéréotypies motrices',        category: 'Vidéo',         unit: 'n',    relevantFor: ['TSA'],          description: 'Nombre de stéréotypies (flapping, balancement)' },
+  selfStimulationScore:     { label: 'Auto-stimulation',             category: 'Vidéo',         unit: '0-100',relevantFor: ['TSA'],          description: 'Score composite de stimming' },
+  responseLatencyMs:        { label: 'Latence de réponse',           category: 'Vidéo',         unit: 'ms',   relevantFor: ['TSA'],          description: 'Temps moyen avant de répondre' },
+  facialExpressionVariabilityScore: { label: 'Variabilité faciale',  category: 'Vidéo',         unit: '0-100',relevantFor: ['TSA'],          description: '0 = plate, 50 = normale, 100 = élevée' },
+  conversationalSynchronyScore:     { label: 'Synchronie conv.',     category: 'Vidéo',         unit: '0-100',relevantFor: ['TSA'],          description: '0 = bonne, 50 = modérée, 100 = faible' },
 };
 
 // ─── Text Feature Extraction (runs client-side or server-side) ───────────
@@ -382,6 +424,41 @@ export function extractAudioFeatures(meta: {
 }
 
 /**
+ * Convert VideoMetadata to feature vector fields.
+ */
+export function extractVideoFeatures(videoMetadata?: {
+  gazeContactRatio: number;
+  blinkRate: number;
+  headMovementIndex: number;
+  handFidgetingScore: number;
+  postureChangeFrequency: number;
+  stereotypyEvents: number;
+  selfStimulationScore: number;
+  responseLatencyMs: number;
+  facialExpressionVariability: string;
+  conversationalSynchrony: string;
+}): Partial<FeatureVector> {
+  if (!videoMetadata) return {};
+
+  return {
+    gazeContactRatio: videoMetadata.gazeContactRatio,
+    blinkRate: videoMetadata.blinkRate,
+    headMovementIndex: videoMetadata.headMovementIndex,
+    handFidgetingScore: videoMetadata.handFidgetingScore,
+    postureChangeFrequency: videoMetadata.postureChangeFrequency,
+    stereotypyEvents: videoMetadata.stereotypyEvents,
+    selfStimulationScore: videoMetadata.selfStimulationScore,
+    responseLatencyMs: videoMetadata.responseLatencyMs,
+    facialExpressionVariabilityScore:
+      videoMetadata.facialExpressionVariability === 'low' ? 0 :
+      videoMetadata.facialExpressionVariability === 'normal' ? 50 : 100,
+    conversationalSynchronyScore:
+      videoMetadata.conversationalSynchrony === 'good' ? 0 :
+      videoMetadata.conversationalSynchrony === 'moderate' ? 50 : 100,
+  };
+}
+
+/**
  * Merge multiple partial feature vectors into a complete one.
  */
 export function mergeFeatures(
@@ -402,6 +479,10 @@ export function mergeFeatures(
     pitchVarianceScore: null, rhythmIrregularityScore: null, speechRateScore: null,
     degradationRatio: null, letterIrregularityScore: null, lineAdherenceScore: null,
     crossingOutCount: null, legibilityScore: null, pressureScore: null,
+    gazeContactRatio: null, blinkRate: null, headMovementIndex: null,
+    handFidgetingScore: null, postureChangeFrequency: null, stereotypyEvents: null,
+    selfStimulationScore: null, responseLatencyMs: null,
+    facialExpressionVariabilityScore: null, conversationalSynchronyScore: null,
   };
 
   for (const partial of partials) {

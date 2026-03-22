@@ -62,6 +62,33 @@ export interface AudioMetadata {
   speechRate: 'slow' | 'normal' | 'fast';
 }
 
+// ─── Video Metadata (extracted features for TSA/TDAH via computer vision) ─────
+
+export interface VideoMetadata {
+  totalDurationMs: number;
+  // Gaze & attention
+  gazeContactRatio: number;          // 0-1: % of time with eye contact
+  gazeAvertedDurationMs: number;     // total time gaze averted
+  saccadeCount: number;              // rapid eye movements
+  // Facial expression
+  blinkRate: number;                 // blinks per minute
+  facialExpressionVariability: 'low' | 'normal' | 'high';
+  emotionalCongruence: 'congruent' | 'incongruent' | 'flat';
+  smileFrequency: number;           // per minute
+  // Motor behavior
+  headMovementIndex: number;         // 0-100: agitation score
+  handFidgetingScore: number;        // 0-100
+  postureChangeFrequency: number;    // per minute
+  bodyRockingEvents: number;         // repetitive rocking count
+  // Stereotypies & repetitive behaviors
+  stereotypyEvents: number;          // hand flapping, finger flicking etc.
+  selfStimulationScore: number;      // 0-100 composite
+  // Interaction & synchrony
+  responseLatencyMs: number;         // avg time before responding
+  conversationalSynchrony: 'good' | 'moderate' | 'poor';
+  turnTakingAppropriateness: 'appropriate' | 'delayed' | 'absent';
+}
+
 // ─── Markers ─────────────────────────────────────────────────────────────
 
 export interface MarkerScore {
@@ -87,6 +114,7 @@ export interface AnalysisResult {
   analysisMode?: AnalysisMode;
   referenceText?: string;
   audioMetadata?: AudioMetadata;
+  videoMetadata?: VideoMetadata;
   disorderScreening?: Record<DisorderCategory, RiskLevel>;
 }
 

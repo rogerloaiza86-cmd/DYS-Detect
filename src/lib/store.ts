@@ -36,6 +36,7 @@ function toResult(row: Record<string, unknown>): AnalysisResult {
     analysisMode:     (row.analysis_mode as AnalysisResult['analysisMode']) ?? 'dictee',
     referenceText:    row.reference_text as string | undefined,
     audioMetadata:    row.audio_metadata as AnalysisResult['audioMetadata'],
+    videoMetadata:    row.video_metadata as AnalysisResult['videoMetadata'],
     disorderScreening: row.disorder_screening as AnalysisResult['disorderScreening'],
   };
 }
@@ -196,6 +197,7 @@ export async function saveResult(result: AnalysisResult): Promise<void> {
   if (result.analysisMode)       row.analysis_mode = result.analysisMode;
   if (result.referenceText)      row.reference_text = result.referenceText;
   if (result.audioMetadata)      row.audio_metadata = result.audioMetadata;
+  if (result.videoMetadata)      row.video_metadata = result.videoMetadata;
   if (result.disorderScreening)  row.disorder_screening = result.disorderScreening;
 
   const { error } = await supabase.from('analysis_results').upsert(row);

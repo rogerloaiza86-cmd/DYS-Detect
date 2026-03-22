@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#0060ad",
+              "on-tertiary-fixed-variant": "#544178",
+              "primary-dim": "#005498",
+              "on-primary": "#f8f8ff",
+              "primary-container": "#68abff",
+              "error": "#a83836",
+              "surface-tint": "#0060ad",
+              "surface-bright": "#f8f9fa",
+              "on-primary-fixed": "#000c1e",
+              "tertiary-fixed": "#d6beff",
+              "tertiary": "#69558e",
+              "surface-variant": "#dee3e6",
+              "primary-fixed": "#68abff",
+              "surface-container-high": "#e5e9eb",
+              "tertiary-container": "#d6beff",
+              "surface-container": "#ebeef0",
+              "surface-container-low": "#f1f4f5",
+              "on-primary-fixed-variant": "#003461",
+              "on-secondary-container": "#005d51",
+              "inverse-surface": "#0c0f10",
+              "surface": "#f8f9fa",
+              "on-surface": "#2d3335",
+              "surface-container-lowest": "#ffffff",
+              "on-surface-variant": "#5a6062",
+              "error-dim": "#67040d",
+              "secondary-dim": "#005e52",
+              "on-error-container": "#6e0a12",
+              "on-primary-container": "#002b52",
+              "secondary-fixed-dim": "#85e6d2",
+              "on-error": "#fff7f6",
+              "on-background": "#2d3335",
+              "inverse-primary": "#68abff",
+              "outline": "#767c7e",
+              "background": "#f8f9fa",
+              "secondary-fixed": "#93f4e0",
+              "inverse-on-surface": "#9b9d9e",
+              "on-secondary-fixed-variant": "#00685a",
+              "surface-container-highest": "#dee3e6",
+              "tertiary-dim": "#5c4981",
+              "on-tertiary-fixed": "#362459",
+              "secondary-container": "#93f4e0",
+              "secondary": "#006b5e",
+              "outline-variant": "#adb3b5",
+              "on-tertiary": "#fef7ff",
+              "tertiary-fixed-dim": "#c8b1f0",
+              "primary-fixed-dim": "#599ef1",
+              "on-tertiary-container": "#4b386e",
+              "on-secondary-fixed": "#00483e",
+              "surface-dim": "#d5dbdd",
+              "error-container": "#fa746f",
+              "on-secondary": "#e3fff7"
+            },
+            fontFamily: {
+              "headline": ["Lexend"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .dyslexia-friendly-line {
+            line-height: 1.8 !important;
+        }
+        .radar-grid {
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- SideNavBar -->
+<aside class="fixed inset-y-0 left-0 w-64 flex flex-col p-6 gap-8 bg-slate-50 dark:bg-slate-950 z-50">
+<div class="flex flex-col gap-1">
+<h1 class="font-headline font-extrabold text-2xl bg-gradient-to-br from-blue-700 to-blue-400 bg-clip-text text-transparent">DYS-Detect</h1>
+<p class="font-headline font-medium tracking-tight text-xs text-slate-500 uppercase">The Empathetic Path</p>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-white transition-transform duration-200 hover:scale-[1.02] rounded-xl font-headline font-medium" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-white transition-transform duration-200 hover:scale-[1.02] rounded-xl font-headline font-medium" href="#">
+<span class="material-symbols-outlined">mic</span>
+<span>New Analysis</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-blue-700 dark:text-blue-300 font-bold rounded-xl bg-white shadow-sm font-headline" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span>Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-white transition-transform duration-200 hover:scale-[1.02] rounded-xl font-headline font-medium" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span>Students</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-white transition-transform duration-200 hover:scale-[1.02] rounded-xl font-headline font-medium" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto">
+<button class="w-full py-4 px-6 rounded-xl bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold text-sm shadow-lg hover:scale-105 transition-all">
+                Start Assessment
+            </button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 min-h-screen p-12">
+<!-- TopNavBar (Simulated Execution) -->
+<header class="flex items-center justify-between mb-16">
+<div class="space-y-1">
+<h2 class="font-headline font-bold text-4xl text-on-surface tracking-tight">Rapport d'Analyse - Thomas Durant</h2>
+<p class="text-on-surface-variant font-medium text-lg">Analyse du 12 Avril 2024</p>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-3 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-outline">notifications</span>
+</button>
+<button class="p-3 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-outline">help_outline</span>
+</button>
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden ml-2">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="Stylized portrait of a young student avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXkI7DAVfx63mahBhmgilKNtoe2VfU2LPp9HNL9ncAE2Bz3-1fVhBmQXANYv2Jj-cQIYmfmQg9fvTtOIVjPFs7uTYx4h4q7zYw_OW4xbrYGoFYC248ss1JINwvV_J-ne643KP7nxi3o0CcooFLpxcAHirUKXDxwUlZoiQlLhztmgmaYZUriivISbL0ML38E_Bq4TD0PHz861bcG3yLZv6rtA96CcaO1mzo-W77CGkdA2HcfnogN_EKy1oAYv9Bs1C2cYTipJSgkro"/>
+</div>
+</div>
+</header>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-8">
+<!-- Risk Level Card -->
+<div class="col-span-12 lg:col-span-5 bg-surface-container-lowest p-10 rounded-xl flex flex-col justify-between relative overflow-hidden group">
+<div class="relative z-10">
+<span class="inline-flex items-center px-4 py-1.5 rounded-full bg-secondary-container text-on-secondary-container font-headline text-sm font-bold mb-6">
+                        Statut de l'Analyse
+                    </span>
+<h3 class="font-headline font-bold text-3xl mb-2 text-on-surface">Indice de Risque</h3>
+<p class="text-on-surface-variant dyslexia-friendly-line mb-8 max-w-xs">Les marqueurs phonologiques indiquent une vigilance particulière sur les liaisons complexes.</p>
+<div class="flex items-end gap-4">
+<span class="text-6xl font-headline font-extrabold text-primary tracking-tighter">Modéré</span>
+<span class="text-2xl font-headline font-bold text-outline-variant mb-2">/ 64%</span>
+</div>
+</div>
+<!-- Abstract visual element -->
+<div class="absolute -right-12 -bottom-12 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all duration-700"></div>
+<div class="absolute right-8 top-8 opacity-10">
+<span class="material-symbols-outlined text-9xl">monitoring</span>
+</div>
+</div>
+<!-- Radar Chart Card -->
+<div class="col-span-12 lg:col-span-7 bg-surface-container-low p-10 rounded-xl flex items-center justify-center relative">
+<div class="w-full max-w-md aspect-square relative flex items-center justify-center">
+<!-- Fake Radar Visual -->
+<div class="absolute inset-0 border-[1px] border-outline-variant/20 radar-grid opacity-30"></div>
+<div class="absolute inset-8 border-[1px] border-outline-variant/20 radar-grid opacity-30"></div>
+<div class="absolute inset-16 border-[1px] border-outline-variant/20 radar-grid opacity-30"></div>
+<div class="absolute inset-24 border-[1px] border-outline-variant/20 radar-grid opacity-30"></div>
+<!-- Labels -->
+<div class="absolute top-0 font-headline font-bold text-primary-dim text-sm">Fluidité</div>
+<div class="absolute top-1/4 -right-12 font-headline font-bold text-primary-dim text-sm">Prononciation</div>
+<div class="absolute bottom-4 -right-4 font-headline font-bold text-primary-dim text-sm text-center">Rythme</div>
+<div class="absolute bottom-4 -left-4 font-headline font-bold text-primary-dim text-sm text-center">Confiance</div>
+<div class="absolute top-1/4 -left-12 font-headline font-bold text-primary-dim text-sm">Hésitations</div>
+<!-- Radar Shape (Manual SVG) -->
+<svg class="w-full h-full drop-shadow-xl overflow-visible" viewbox="0 0 100 100">
+<polygon fill="rgba(0, 96, 173, 0.2)" points="50,15 90,45 75,85 25,85 15,40" stroke="#0060ad" stroke-width="2"></polygon>
+<circle cx="50" cy="15" fill="#0060ad" r="3"></circle>
+<circle cx="90" cy="45" fill="#0060ad" r="3"></circle>
+<circle cx="75" cy="85" fill="#0060ad" r="3"></circle>
+<circle cx="25" cy="85" fill="#0060ad" r="3"></circle>
+<circle cx="15" cy="40" fill="#0060ad" r="3"></circle>
+</svg>
+</div>
+</div>
+<!-- Transcription Card -->
+<div class="col-span-12 bg-surface-container-lowest p-10 rounded-xl">
+<div class="flex items-center gap-3 mb-8">
+<span class="material-symbols-outlined text-primary">description</span>
+<h3 class="font-headline font-bold text-2xl">Transcription de l'enregistrement</h3>
+</div>
+<div class="p-8 bg-surface rounded-lg dyslexia-friendly-line text-xl font-body text-on-surface">
+                    "Le petit chat est <span class="border-b-4 border-error/30 bg-error/5 px-1 rounded-sm">monté</span> sur le toit de la maison. Il <span class="border-b-4 border-tertiary/30 bg-tertiary/5 px-1 rounded-sm">attendait</span> sagemen... sagement que le soleil se lève. Tout à coup, un <span class="border-b-4 border-error/30 bg-error/5 px-1 rounded-sm">oiseau bleu</span> est passé devant lui, et le chat a <span class="border-b-4 border-error/30 bg-error/5 px-1 rounded-sm">essayé</span> de l'attraper avec ses pattes."
+                </div>
+<div class="mt-6 flex gap-6">
+<div class="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
+<div class="w-3 h-3 rounded-full bg-error/30"></div> Substitution / Inversion
+                    </div>
+<div class="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
+<div class="w-3 h-3 rounded-full bg-tertiary/30"></div> Hésitation prolongée
+                    </div>
+</div>
+</div>
+<!-- AI Insights Columns -->
+<div class="col-span-12 md:col-span-6 bg-surface-container-low p-10 rounded-xl">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-secondary">psychology</span>
+<h3 class="font-headline font-bold text-2xl text-on-surface">Observations IA</h3>
+</div>
+<ul class="space-y-6">
+<li class="flex gap-4">
+<div class="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-primary text-sm">check</span>
+</div>
+<p class="dyslexia-friendly-line text-on-surface-variant">Bonne articulation globale des sons simples (voyelles claires).</p>
+</li>
+<li class="flex gap-4">
+<div class="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-primary text-sm">warning</span>
+</div>
+<p class="dyslexia-friendly-line text-on-surface-variant">Difficulté marquée sur les groupes consonantiques "tr", "cr" et "bl".</p>
+</li>
+<li class="flex gap-4">
+<div class="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-primary text-sm">history</span>
+</div>
+<p class="dyslexia-friendly-line text-on-surface-variant">Auto-correction fréquente montrant une bonne conscience phonologique.</p>
+</li>
+</ul>
+</div>
+<div class="col-span-12 md:col-span-6 bg-surface-container-lowest p-10 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary">school</span>
+<h3 class="font-headline font-bold text-2xl text-on-surface">Recommandations</h3>
+</div>
+<div class="space-y-4">
+<div class="p-6 bg-secondary-container/20 rounded-xl">
+<h4 class="font-headline font-bold text-on-secondary-container mb-2 text-lg">Exercice de segmentation</h4>
+<p class="text-sm dyslexia-friendly-line text-on-secondary-container opacity-80">Pratiquer la frappe des syllabes pour les mots complexes rencontrés dans le texte.</p>
+</div>
+<div class="p-6 bg-tertiary-container/20 rounded-xl">
+<h4 class="font-headline font-bold text-on-tertiary-container mb-2 text-lg">Lecture accompagnée</h4>
+<p class="text-sm dyslexia-friendly-line text-on-tertiary-container opacity-80">Privilégier les supports avec un espacement inter-lettres augmenté (normes Dys).</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Area -->
+<div class="mt-16 flex justify-end">
+<button class="group flex items-center gap-4 py-5 px-10 rounded-xl bg-primary text-on-primary font-headline font-bold text-lg hover:bg-primary-dim hover:scale-[1.03] active:scale-95 transition-all shadow-[0_20px_40px_rgba(0,96,173,0.15)]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+                Exporter le rapport en PDF
+            </button>
+</div>
+</main>
+</body></html>

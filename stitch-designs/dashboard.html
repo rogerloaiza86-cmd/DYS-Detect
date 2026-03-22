@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DYS-Detect Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#0060ad",
+              "on-tertiary-fixed-variant": "#544178",
+              "primary-dim": "#005498",
+              "on-primary": "#f8f8ff",
+              "primary-container": "#68abff",
+              "error": "#a83836",
+              "surface-tint": "#0060ad",
+              "surface-bright": "#f8f9fa",
+              "on-primary-fixed": "#000c1e",
+              "tertiary-fixed": "#d6beff",
+              "tertiary": "#69558e",
+              "surface-variant": "#dee3e6",
+              "primary-fixed": "#68abff",
+              "surface-container-high": "#e5e9eb",
+              "tertiary-container": "#d6beff",
+              "surface-container": "#ebeef0",
+              "surface-container-low": "#f1f4f5",
+              "on-primary-fixed-variant": "#003461",
+              "on-secondary-container": "#005d51",
+              "inverse-surface": "#0c0f10",
+              "surface": "#f8f9fa",
+              "on-surface": "#2d3335",
+              "surface-container-lowest": "#ffffff",
+              "on-surface-variant": "#5a6062",
+              "error-dim": "#67040d",
+              "secondary-dim": "#005e52",
+              "on-error-container": "#6e0a12",
+              "on-primary-container": "#002b52",
+              "secondary-fixed-dim": "#85e6d2",
+              "on-error": "#fff7f6",
+              "on-background": "#2d3335",
+              "inverse-primary": "#68abff",
+              "outline": "#767c7e",
+              "background": "#f8f9fa",
+              "secondary-fixed": "#93f4e0",
+              "inverse-on-surface": "#9b9d9e",
+              "on-secondary-fixed-variant": "#00685a",
+              "surface-container-highest": "#dee3e6",
+              "tertiary-dim": "#5c4981",
+              "on-tertiary-fixed": "#362459",
+              "secondary-container": "#93f4e0",
+              "secondary": "#006b5e",
+              "outline-variant": "#adb3b5",
+              "on-tertiary": "#fef7ff",
+              "tertiary-fixed-dim": "#c8b1f0",
+              "primary-fixed-dim": "#599ef1",
+              "on-tertiary-container": "#4b386e",
+              "on-secondary-fixed": "#00483e",
+              "surface-dim": "#d5dbdd",
+              "error-container": "#fa746f",
+              "on-secondary": "#e3fff7"
+            },
+            fontFamily: {
+              "headline": ["Lexend"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-headline { font-family: 'Lexend', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased overflow-x-hidden">
+<!-- SideNavBar -->
+<aside class="fixed inset-y-0 left-0 w-64 flex flex-col p-6 gap-8 bg-surface-container-low z-50">
+<div class="flex flex-col gap-1">
+<h1 class="font-headline font-extrabold text-2xl bg-gradient-to-br from-primary to-primary-container bg-clip-text text-transparent">DYS-Detect</h1>
+<p class="font-headline text-xs text-on-surface-variant tracking-wider uppercase opacity-70">The Empathetic Path</p>
+</div>
+<nav class="flex flex-col gap-2 mt-4">
+<!-- Active Item: Dashboard -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary dark:text-blue-300 font-bold rounded-xl bg-white dark:bg-slate-900 transition-transform duration-200 hover:scale-[1.02]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-headline">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 transition-transform duration-200 hover:scale-[1.02] hover:bg-white/50 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="mic">mic</span>
+<span class="font-headline">New Analysis</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 transition-transform duration-200 hover:scale-[1.02] hover:bg-white/50 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-headline">Students</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 transition-transform duration-200 hover:scale-[1.02] hover:bg-white/50 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-headline">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 transition-transform duration-200 hover:scale-[1.02] hover:bg-white/50 rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-headline">Settings</span>
+</a>
+</nav>
+<div class="mt-auto">
+<button class="w-full py-4 bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-all duration-200 active:scale-95">
+                Start Assessment
+            </button>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-64 h-16 flex items-center justify-between px-8 bg-white/70 backdrop-blur-3xl z-40 shadow-[0_20px_40px_rgba(45,51,53,0.06)]">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant">search</span>
+<input class="w-full bg-surface-container-highest border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Rechercher un élève..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-slate-100/50 rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-slate-100/50 rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant/20"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="font-headline text-sm font-bold text-on-surface">Dr. Sophie Martin</p>
+<p class="text-xs text-on-surface-variant">Orthophoniste</p>
+</div>
+<img class="w-10 h-10 rounded-full object-cover ring-2 ring-primary/10" data-alt="Female doctor professional profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBy24k-zGT5k-HYLvTRpgnn3tA40QbsX-QYQGrvBI1doK16NUC3UD-qzTiX34W4OnlelAePOxUBJyerX8uraN7KLRqMbpmoQFX4l6pZ5XoVOAON5Vc6uTOpmoGIOH25Yer2vmWZfoh15HJ5QibH5cu0jmKostH3Kt8Oa7t3h_nL3vdfbeB2BCToyvMGkdzVGDe_nv-ylXlaJZ40Jl8NDHlJDMweaKebJC2b_QN51V-o2fRdacL0JJemBqxlforV49XLjPrCarpbiHA"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 pt-24 pb-12 px-12 min-h-screen">
+<!-- Welcome Header -->
+<header class="mb-12">
+<h2 class="font-headline text-4xl font-extrabold text-on-surface tracking-tight mb-2">Bienvenue, Dr. Sophie Martin</h2>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary" data-icon="calendar_today">calendar_today</span>
+<p class="font-body text-lg font-medium">Aujourd'hui, <span class="text-primary font-bold">24 élèves</span> analysés.</p>
+</div>
+</header>
+<!-- Bento Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+<!-- Stat Card 1 -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/5 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-6">
+<div class="p-3 bg-secondary-container rounded-lg text-on-secondary-container">
+<span class="material-symbols-outlined text-3xl" data-icon="school">school</span>
+</div>
+<div class="flex items-center gap-1 text-secondary text-sm font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+<span>+5.2%</span>
+</div>
+</div>
+<h3 class="text-on-surface-variant font-label font-medium mb-1">Total Élèves</h3>
+<p class="font-headline text-4xl font-bold text-on-surface">154</p>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/5 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-6">
+<div class="p-3 bg-error-container/20 rounded-lg text-error">
+<span class="material-symbols-outlined text-3xl" data-icon="priority_high">priority_high</span>
+</div>
+<div class="flex items-center gap-1 text-error text-sm font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+<span>3 ce mois-ci</span>
+</div>
+</div>
+<h3 class="text-on-surface-variant font-label font-medium mb-1">Risque Élevé</h3>
+<p class="font-headline text-4xl font-bold text-on-surface">12</p>
+</div>
+<!-- Stat Card 3 -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/5 transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-6">
+<div class="p-3 bg-primary-container/20 rounded-lg text-primary">
+<span class="material-symbols-outlined text-3xl" data-icon="neurology">neurology</span>
+</div>
+<div class="flex items-center gap-1 text-primary text-sm font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="history">history</span>
+<span>Dernier 12 oct</span>
+</div>
+</div>
+<h3 class="text-on-surface-variant font-label font-medium mb-1">Total Analyses</h3>
+<p class="font-headline text-4xl font-bold text-on-surface">482</p>
+</div>
+</div>
+<!-- Main Section: Recent Students -->
+<section class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/5">
+<div class="p-8 flex justify-between items-center bg-surface-container-low/30">
+<h3 class="font-headline text-2xl font-bold text-on-surface">Élèves Récents</h3>
+<button class="text-primary font-headline font-bold text-sm hover:underline transition-all">Tout voir</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full border-collapse">
+<thead>
+<tr class="text-left border-b border-outline-variant/10">
+<th class="px-8 py-4 font-headline text-sm font-bold text-on-surface-variant">Nom</th>
+<th class="px-8 py-4 font-headline text-sm font-bold text-on-surface-variant">Classe</th>
+<th class="px-8 py-4 font-headline text-sm font-bold text-on-surface-variant">Âge</th>
+<th class="px-8 py-4 font-headline text-sm font-bold text-on-surface-variant">Statut de risque</th>
+<th class="px-8 py-4 font-headline text-sm font-bold text-on-surface-variant text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<!-- Student Row 1 -->
+<tr class="hover:bg-surface-container-low/20 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Smiling primary school boy portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIDro7F0MYwC0PcnZju-5vhT8m_3bxCudKza9FoCeWDfOs_h0a1D_qyAqOlKw0KpBn5hob2idzwtv0pqU90tcYONvk4Fqj-zXvKmnhXsZHaISZVNzFCX5EV9fqDC4_K3WNg8gBYMfa1Tf1uIZVgTDit5QIMts_N07wsw3uw2W6VoZ4Er0KSl6fHtu-FE48LDysWop1vOM8qDM-HzvXz7NB0Q0xPKiVUeBNX9p4NOJoPZjDPDHjNMC0fC4J1nPFwsWgwCxNxoORKdA"/>
+<span class="font-headline font-bold text-on-surface">Lucas Bernard</span>
+</div>
+</td>
+<td class="px-8 py-5 text-on-surface-variant font-medium">CE1</td>
+<td class="px-8 py-5 text-on-surface-variant font-medium">7 ans</td>
+<td class="px-8 py-5">
+<span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-error-container/20 text-error">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+                                    Risque Élevé
+                                </span>
+</td>
+<td class="px-8 py-5 text-right">
+<button class="px-6 py-2 border-2 border-primary/10 text-primary font-headline font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all active:scale-95">
+                                    Voir l'analyse
+                                </button>
+</td>
+</tr>
+<!-- Student Row 2 -->
+<tr class="hover:bg-surface-container-low/20 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Young primary school girl with pigtails" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMuj-b1gyfE6SJKOfXxXCwsb3o_PIzB_Blg6HvpW-gzZ3VBhocHj8-PUu7bEaWTLUI0yvARAdRZs9tmeew6yCzGVLUwr6TYvp9RYXz0B8gkBBB6WR4CzDjqpGzfK2k1vhcrtCFp-_Na_zRGWhiTiptoKcBaSQfJYx-EBkMFcnhteJPrcBDG23JKfAO21Db-ePQZFKquxrAEUHfjt1OF2G82uLFCvvKNSrqiGvKUWyYEyS2GAKEVSmhxxoOrhp7sjQNLQU-dfDyKtE"/>
+<span class="font-headline font-bold text-on-surface">Emma Dubois</span>
+</div>
+</td>
+<td class="px-8 py-5 text-on-surface-variant font-medium">CP</td>
+<td class="px-8 py-5 text-on-surface-variant font-medium">6 ans</td>
+<td class="px-8 py-5">
+<span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-secondary-container/30 text-secondary">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                    Risque Faible
+                                </span>
+</td>
+<td class="px-8 py-5 text-right">
+<button class="px-6 py-2 border-2 border-primary/10 text-primary font-headline font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all active:scale-95">
+                                    Voir l'analyse
+                                </button>
+</td>
+</tr>
+<!-- Student Row 3 -->
+<tr class="hover:bg-surface-container-low/20 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Elementary student boy portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBfgAuh8z2Ih7ur76BazC193zi8Byvs6N0227ljKS1gZMhrC4NnEi6A5Qa8Jh_SohJn2Qu9kilXX2BIJrJbsl3sCHzcV4Y-l8zxDfZIBfEDfKyl_hjmhXPtj1PXrt4beIZ28dHGySgZzI8qlcQGJ7J6BFHmN7J8eo_LwjSSmFLpR6oPQokBgRx4ck13f8PCST587B2UveOlO0yZOb9cwp7eLM_iXPigh_FQyrISnsZHEaTjxwwlaXJFmXbnuFW4KG0Ip7S-cQPGlM"/>
+<span class="font-headline font-bold text-on-surface">Noah Lefebvre</span>
+</div>
+</td>
+<td class="px-8 py-5 text-on-surface-variant font-medium">CE1</td>
+<td class="px-8 py-5 text-on-surface-variant font-medium">8 ans</td>
+<td class="px-8 py-5">
+<span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-tertiary-container/30 text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                                    Risque Modéré
+                                </span>
+</td>
+<td class="px-8 py-5 text-right">
+<button class="px-6 py-2 border-2 border-primary/10 text-primary font-headline font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all active:scale-95">
+                                    Voir l'analyse
+                                </button>
+</td>
+</tr>
+<!-- Student Row 4 -->
+<tr class="hover:bg-surface-container-low/20 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Young student looking curious portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5HJiKrknMt1VjIXWHxf5T7YLhdMN2c1pNLnP8xR0Siz4mp9YiVfgPH6AvA42DF4ITss8th-m0dMwZfGEQA--MX6oQkpqWiiKyRAq2pSVsdeP7tK_yCiUomMP3fDMQFuv5JEV5s8CNXzoOI8HDJQa_oEvoDLwCDbN3Cj5qYfrAbGP-CcorcgDxSf0CXfbQhAGeSua8PVklVtuxmC736CcafiyFX6CIIkOarYGkfp5tXI3BabJBGQK3wiVkY7b9mf0AF_sldRHKxlc"/>
+<span class="font-headline font-bold text-on-surface">Chloé Petit</span>
+</div>
+</td>
+<td class="px-8 py-5 text-on-surface-variant font-medium">CP</td>
+<td class="px-8 py-5 text-on-surface-variant font-medium">6 ans</td>
+<td class="px-8 py-5">
+<span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-secondary-container/30 text-secondary">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                    Risque Faible
+                                </span>
+</td>
+<td class="px-8 py-5 text-right">
+<button class="px-6 py-2 border-2 border-primary/10 text-primary font-headline font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all active:scale-95">
+                                    Voir l'analyse
+                                </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-8 py-6 flex justify-between items-center text-sm text-on-surface-variant font-medium">
+<p>Affichage de 4 sur 24 analyses récentes</p>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-all"><span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span></button>
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-all"><span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span></button>
+</div>
+</div>
+</section>
+<!-- Dynamic Insights (Additional Section for premium feel) -->
+<section class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+<div class="bg-primary/5 p-8 rounded-xl border-2 border-primary/10 flex items-center gap-6">
+<div class="p-4 bg-primary rounded-2xl text-on-primary">
+<span class="material-symbols-outlined text-4xl" data-icon="lightbulb">lightbulb</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-primary text-xl mb-1">Aperçu Hebdomadaire</h4>
+<p class="text-on-surface-variant font-body">Les tendances indiquent une amélioration de la phonologie en CE1-B.</p>
+</div>
+</div>
+<div class="bg-secondary-container/20 p-8 rounded-xl border-2 border-secondary/10 flex items-center gap-6">
+<div class="p-4 bg-secondary rounded-2xl text-on-secondary">
+<span class="material-symbols-outlined text-4xl" data-icon="task_alt">task_alt</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-secondary text-xl mb-1">Actions suggérées</h4>
+<p class="text-on-surface-variant font-body">3 analyses attendent votre validation finale pour Lucas Bernard.</p>
+</div>
+</div>
+</section>
+</main>
+</body></html>

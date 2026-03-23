@@ -8,6 +8,7 @@ import RadarChartDisplay from '@/components/RadarChartDisplay';
 const PdfExportButton = dynamic(() => import('@/components/PdfExportButton'), { ssr: false });
 import { getResultById, getStudentById, deleteResult } from '@/lib/store';
 import { AnalysisResult, Student, DisorderCategory, RiskLevel, ANALYSIS_MODES } from '@/lib/types';
+import { exportESS } from '@/lib/export-ess';
 import Link from 'next/link';
 
 const DISORDER_COLORS: Record<DisorderCategory, { bg: string; text: string; border: string; label: string }> = {
@@ -137,6 +138,54 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
     },
   } as const;
 
+  // ─── Differential Analysis ─────────────────────────────────────────────
+  // Computes average score per top-level disorder category
+  const catAvgScore = (cat: DisorderCategory): number => {
+    const scores = (data.markers || [])
+      .filter(m => m.category === cat)
+      .map(m => m.score);
+    return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  };
+
+  const categoryScores: { cat: DisorderCategory; avg: number }[] = (
+    ['DYS', 'TDAH', 'TSA'] as DisorderCategory[]
+  )
+    .map(cat => ({ cat, avg: catAvgScore(cat) }))
+    .filter(x => x.avg > 40)
+    .sort((a, b) => b.avg - a.avg);
+
+  const showDifferential = categoryScores.length >= 2;
+
+  // Build discriminating markers between the top 2 categories
+  const differentialPairs: {
+    markerName: string;
+    scores: { cat: DisorderCategory; score: number }[];
+    diff: number;
+  }[] = [];
+
+  if (showDifferential) {
+    const top2 = categoryScores.slice(0, 2).map(x => x.cat);
+    const markerNameSet = new Set<string>();
+    for (const m of data.markers || []) {
+      if (top2.includes(m.category as DisorderCategory)) markerNameSet.add(m.name);
+    }
+    for (const name of markerNameSet) {
+      const entry: { cat: DisorderCategory; score: number }[] = [];
+      for (const cat of top2) {
+        const found = (data.markers || []).find(m => m.name === name && m.category === cat);
+        if (found) entry.push({ cat, score: found.score });
+      }
+      if (entry.length === 2) {
+        differentialPairs.push({
+          markerName: name,
+          scores: entry,
+          diff: Math.abs(entry[0].score - entry[1].score),
+        });
+      }
+    }
+    differentialPairs.sort((a, b) => b.diff - a.diff);
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       {/* Header */}
@@ -174,6 +223,14 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         </div>
 
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => exportESS(student, data)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-surface-container-high text-on-surface font-headline font-bold rounded-xl hover:bg-surface-container-highest transition-all text-sm border border-outline-variant/20"
+            title="Exporter le document ESS"
+          >
+            <span className="material-symbols-outlined text-lg">description</span>
+            Export ESS
+          </button>
           <div className="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center font-bold text-on-secondary-container text-2xl shadow-sm border border-secondary/10 shrink-0">
             {student.initials}
           </div>
@@ -422,6 +479,76 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
             </div>
           );
         })}
+
+        {/* Differential Analysis */}
+        {showDifferential && (
+          <div className="col-span-12 bg-surface-container-lowest p-8 rounded-2xl border-2 border-purple-300 dark:border-purple-700 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-xl text-purple-600 dark:text-purple-400">
+                <span className="material-symbols-outlined text-2xl">search</span>
+              </div>
+              <div>
+                <h3 className="font-headline font-bold text-xl text-on-surface">Analyse différentielle</h3>
+                <p className="text-xs text-on-surface-variant font-body mt-0.5">
+                  Marqueurs discriminants entre{' '}
+                  {categoryScores.slice(0, 2).map((x, i) => (
+                    <span key={x.cat}>
+                      {i > 0 && ' et '}
+                      <span className={`font-bold ${DISORDER_COLORS[x.cat].text}`}>{DISORDER_COLORS[x.cat].label}</span>
+                      {' '}({Math.round(x.avg)}%)
+                    </span>
+                  ))}
+                </p>
+              </div>
+            </div>
+
+            {differentialPairs.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-outline-variant/10">
+                      <th className="text-left p-3 font-headline font-bold text-on-surface">Marqueur</th>
+                      {categoryScores.slice(0, 2).map(x => (
+                        <th key={x.cat} className={`text-center p-3 font-headline font-bold ${DISORDER_COLORS[x.cat].text}`}>
+                          {DISORDER_COLORS[x.cat].label}
+                        </th>
+                      ))}
+                      <th className="text-center p-3 font-headline font-bold text-purple-600 dark:text-purple-400">Écart</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {differentialPairs.slice(0, 8).map((pair, idx) => (
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-surface' : 'bg-surface-container-lowest'}>
+                        <td className="p-3 font-body text-on-surface">{pair.markerName}</td>
+                        {pair.scores.map(({ cat, score }) => {
+                          const isMax = score === Math.max(...pair.scores.map(s => s.score));
+                          return (
+                            <td key={cat} className={`p-3 text-center font-mono font-bold ${isMax ? 'text-error' : 'text-secondary'}`}>
+                              {score}%
+                              {isMax && <span className="material-symbols-outlined text-xs ml-1 align-middle">arrow_upward</span>}
+                            </td>
+                          );
+                        })}
+                        <td className="p-3 text-center font-mono font-bold text-purple-600 dark:text-purple-400">
+                          {pair.diff} pts
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-on-surface-variant font-body italic text-sm">
+                Aucun marqueur en commun entre les deux catégories pour établir une comparaison directe.
+              </p>
+            )}
+
+            <p className="mt-4 text-xs text-on-surface-variant font-body italic">
+              Un écart important entre les scores d&apos;un même marqueur suggère une orientation préférentielle.
+              Cette analyse doit être confirmée par un professionnel de santé.
+            </p>
+          </div>
+        )}
 
         {/* Recommendations */}
         <div className={`col-span-12 ${Object.keys(markersByCategory).length % 2 !== 0 ? 'lg:col-span-6' : ''} bg-surface-container-lowest p-8 lg:p-10 rounded-2xl border border-outline-variant/10 shadow-sm`}>

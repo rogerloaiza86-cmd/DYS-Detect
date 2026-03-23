@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { getStudents, getResults, getDiagnosticLabels } from '@/lib/store';
 import { extractTextFeatures, extractAudioFeatures, mergeFeatures, FeatureVector, FEATURE_LABELS } from '@/lib/features';
 import { Student, AnalysisResult, DiagnosticLabel, DisorderCategory } from '@/lib/types';
+import { exportAnalysesCSV } from '@/lib/export-csv';
 import Link from 'next/link';
 
 const DISORDER_COLORS: Record<DisorderCategory, string> = {
@@ -142,7 +143,15 @@ export default function ResearchPage() {
             Variables objectives extraites — corrélation avec profils cliniques confirmés
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={() => exportAnalysesCSV(results, students)}
+            disabled={exporting || loading}
+            className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white font-headline font-bold rounded-xl hover:bg-purple-700 transition-all text-sm disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-lg">science</span>
+            Exporter CSV (Recherche)
+          </button>
           <button
             onClick={() => handleExport('csv')}
             disabled={exporting}

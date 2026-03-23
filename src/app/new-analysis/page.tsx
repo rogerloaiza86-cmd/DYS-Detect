@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AudioRecorder from '@/components/AudioRecorder';
-import { getStudents, createStudent, saveResult } from '@/lib/store';
+import { getStudents, createStudent, saveResult, getResultById } from '@/lib/store';
 import { Student, AnalysisMode, ANALYSIS_MODES, EXPRESSION_TOPICS, CONVERSATION_QUESTIONS, AudioMetadata } from '@/lib/types';
+import { TEXTS_BANK, ReferenceText, GradeLevel, TextTarget } from '@/lib/texts-bank';
 import Link from 'next/link';
 import { Upload, X } from 'lucide-react';
 
@@ -31,16 +32,34 @@ function compressImage(dataUrl: string, maxWidth = 1200, quality = 0.7): Promise
 
 const DEFAULT_DICTATION = "Le petit chat boit son lait dans la cuisine.";
 
-const REFERENCE_TEXTS = [
-  { id: 'cp1', grade: 'CP', label: 'Le chat et la souris', text: "Le chat mange la souris. Il court dans le jardin. Maman appelle le chat. Il revient vite." },
-  { id: 'ce1', grade: 'CE1', label: 'La promenade en forêt', text: "Ce matin, nous sommes allés nous promener dans la forêt. Les oiseaux chantaient dans les arbres. Nous avons ramassé des feuilles de toutes les couleurs." },
-  { id: 'ce2', grade: 'CE2', label: 'Le marché du village', text: "Tous les samedis, grand-mère va au marché du village. Elle achète des fruits, des légumes et du fromage. Le marchand lui donne toujours un petit extra parce qu'elle est sa meilleure cliente." },
-  { id: 'cm1', grade: 'CM1', label: "L'aventure du randonneur", text: "Pierre marchait depuis plusieurs heures sur le sentier de montagne. Le soleil commençait à descendre derrière les sommets enneigés. Il devait trouver un abri avant la nuit, car la température allait baisser rapidement." },
-  { id: 'cm2', grade: 'CM2', label: 'La découverte scientifique', text: "Les scientifiques ont découvert une nouvelle espèce de papillon dans la forêt amazonienne. Cet insecte, aux ailes bleu métallique, ne vit que dans les zones où la végétation est particulièrement dense. Cette découverte souligne l'importance de protéger les forêts tropicales." },
+const GRADE_LEVELS: GradeLevel[] = ['CP', 'CE1', 'CE2', 'CM1', 'CM2', '6eme', '5eme', '4eme'];
+const TEXT_TARGETS: { value: TextTarget | 'all'; label: string }[] = [
+  { value: 'all', label: 'Tous' },
+  { value: 'DYS', label: 'DYS' },
+  { value: 'TDAH', label: 'TDAH' },
+  { value: 'TSA', label: 'TSA' },
+  { value: 'general', label: 'Général' },
 ];
 
-export default function NewAnalysisPage() {
+const DIFFICULTY_STARS: Record<string, number> = { facile: 1, moyen: 2, difficile: 3 };
+const DIFFICULTY_COLORS: Record<string, string> = {
+  facile: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  moyen: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  difficile: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+};
+const TARGET_COLORS: Record<string, string> = {
+  DYS: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  TDAH: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  TSA: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  general: 'bg-surface-container-highest text-on-surface-variant',
+};
+
+// ─── Inner component (uses useSearchParams) ───────────────────────────────────
+
+function NewAnalysisContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
@@ -60,16 +79,61 @@ export default function NewAnalysisPage() {
   const [conversationStep, setConversationStep] = useState(0);
   const [isConversationActive, setIsConversationActive] = useState(false);
 
+  // Texts bank filters
+  const [gradeFilter, setGradeFilter] = useState<GradeLevel | 'all'>('all');
+  const [targetFilter, setTargetFilter] = useState<TextTarget | 'all'>('all');
+  const [selectedBankText, setSelectedBankText] = useState<ReferenceText | null>(null);
+
   // Steps: 1: Capture, 2: Transcription, 3: Extraction audio, 4: Analyse IA
   const [currentStep, setCurrentStep] = useState(1);
   const [processingLabel, setProcessingLabel] = useState('');
+
+  // Réévaluation mode
+  const [reevaluationId, setReevaluationId] = useState<string | null>(null);
+  const [reevaluationDate, setReevaluationDate] = useState<string | null>(null);
 
   useEffect(() => {
     getStudents().then(setStudents);
   }, []);
 
+  // Handle reevaluation param
+  useEffect(() => {
+    const reevalParam = searchParams.get('reevaluation');
+    if (!reevalParam) return;
+
+    getResultById(reevalParam).then((result) => {
+      if (!result) return;
+      setReevaluationId(result.id);
+      setReevaluationDate(new Date(result.date).toLocaleDateString('fr-FR', {
+        day: '2-digit', month: 'long', year: 'numeric',
+      }));
+
+      // Pre-select same analysis mode
+      if (result.analysisMode) {
+        setAnalysisMode(result.analysisMode);
+      }
+
+      // Pre-fill reference text for dictee mode
+      if ((result.analysisMode === 'dictee' || result.analysisMode === 'lecture_libre') && result.referenceText) {
+        setReferenceText(result.referenceText);
+        // Try to find matching bank text
+        const match = TEXTS_BANK.find(t => t.text === result.referenceText);
+        if (match) {
+          setSelectedBankText(match);
+        }
+      }
+    });
+  }, [searchParams]);
+
   const currentModeConfig = ANALYSIS_MODES.find(m => m.id === analysisMode)!;
   const currentStudentObj = students.find(s => s.id === selectedStudent);
+
+  // Filtered texts
+  const filteredTexts = TEXTS_BANK.filter(t => {
+    const gradeOk = gradeFilter === 'all' || t.gradeLevel.includes(gradeFilter as GradeLevel);
+    const targetOk = targetFilter === 'all' || t.targets.includes(targetFilter as TextTarget);
+    return gradeOk && targetOk;
+  });
 
   const handleSelectChange = (value: string) => {
     if (value === 'new') {
@@ -132,9 +196,16 @@ export default function NewAnalysisPage() {
     setImagePreview(null);
     setConversationStep(0);
     setIsConversationActive(false);
+    setSelectedBankText(null);
     if (mode === 'dictee') {
       setReferenceText(DEFAULT_DICTATION);
     }
+  };
+
+  const handleSelectBankText = (text: ReferenceText) => {
+    setSelectedBankText(text);
+    setReferenceText(text.text);
+    setCustomReferenceText('');
   };
 
   const handleAnalyze = async () => {
@@ -217,7 +288,12 @@ export default function NewAnalysisPage() {
       };
 
       await saveResult(finalAnalysis);
-      router.push(`/results/${analysisData.id}`);
+
+      // Pass reevaluationId as query param if in reevaluation mode
+      const resultsUrl = reevaluationId
+        ? `/results/${analysisData.id}?reevaluationId=${reevaluationId}`
+        : `/results/${analysisData.id}`;
+      router.push(resultsUrl);
 
     } catch (error) {
       console.error("Error during analysis:", error);
@@ -241,6 +317,21 @@ export default function NewAnalysisPage() {
         </h1>
         <p className="text-on-surface-variant mt-1 font-body">Analyse multi-troubles : DYS, TDAH, TSA</p>
       </div>
+
+      {/* Reevaluation Banner */}
+      {reevaluationId && reevaluationDate && (
+        <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-xl">
+          <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-2xl shrink-0">compare_arrows</span>
+          <div>
+            <p className="font-headline font-bold text-blue-700 dark:text-blue-300 text-sm">
+              Mode Réévaluation
+            </p>
+            <p className="text-blue-600 dark:text-blue-400 text-sm font-body">
+              Comparaison avec l&apos;analyse du {reevaluationDate}. Le mode et le texte de référence ont été pré-sélectionnés.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Mode Selector */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -303,43 +394,207 @@ export default function NewAnalysisPage() {
 
           {/* Mode-specific content */}
           <div className="relative z-10 w-full">
-            {/* DICTÉE: show reference sentence */}
+            {/* DICTÉE: show reference sentence + bank */}
             {analysisMode === 'dictee' && (
-              <div className="text-center space-y-4">
+              <div className="space-y-4">
                 <span className="font-headline uppercase tracking-widest text-primary font-bold text-sm bg-primary/5 px-4 py-1.5 rounded-full">Texte de Référence</span>
-                <h2 className="font-headline text-2xl font-medium text-on-surface max-w-lg mx-auto leading-relaxed mt-4">
-                  &quot;{referenceText}&quot;
-                </h2>
+
+                {/* Filters */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <select
+                    value={gradeFilter}
+                    onChange={(e) => setGradeFilter(e.target.value as GradeLevel | 'all')}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-outline-variant/30 bg-surface text-on-surface font-body focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <option value="all">Tous niveaux</option>
+                    {GRADE_LEVELS.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                  <div className="flex gap-1 flex-wrap">
+                    {TEXT_TARGETS.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setTargetFilter(t.value as TextTarget | 'all')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
+                          targetFilter === t.value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-outline-variant/20 text-on-surface-variant hover:border-primary/30'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Text list */}
+                <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
+                  {filteredTexts.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => handleSelectBankText(t)}
+                      className={`text-left p-3 rounded-lg border transition-all ${
+                        selectedBankText?.id === t.id
+                          ? 'border-primary bg-primary/5 shadow-sm'
+                          : 'border-outline-variant/20 hover:border-primary/30 hover:bg-surface-variant/20'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <span className="font-bold text-sm text-on-surface">{t.title}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${DIFFICULTY_COLORS[t.difficulty]}`}>
+                            {'★'.repeat(DIFFICULTY_STARS[t.difficulty])}{'☆'.repeat(3 - DIFFICULTY_STARS[t.difficulty])}
+                          </span>
+                          <span className="text-[10px] text-on-surface-variant font-body">{t.wordCount} mots</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mb-1">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant">
+                          {t.gradeLevel.join(' · ')}
+                        </span>
+                        {t.targets.map(tgt => (
+                          <span key={tgt} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${TARGET_COLORS[tgt] || TARGET_COLORS.general}`}>
+                            {tgt}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {t.phonologicalFeatures.slice(0, 3).map(f => (
+                          <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-outline-variant/10 text-on-surface-variant font-body">
+                            {f.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                        {t.phonologicalFeatures.length > 3 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-outline-variant/10 text-on-surface-variant font-body">
+                            +{t.phonologicalFeatures.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                  {filteredTexts.length === 0 && (
+                    <p className="text-sm text-on-surface-variant italic text-center py-4">Aucun texte pour ces filtres.</p>
+                  )}
+                </div>
+
+                {/* Selected text display */}
+                {selectedBankText && (
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-headline font-bold text-sm text-primary">{selectedBankText.title}</span>
+                      <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+                        <span>{selectedBankText.wordCount} mots</span>
+                        <span className={`font-bold px-2 py-0.5 rounded-full text-[10px] ${DIFFICULTY_COLORS[selectedBankText.difficulty]}`}>
+                          {'★'.repeat(DIFFICULTY_STARS[selectedBankText.difficulty])} {selectedBankText.difficulty}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-on-surface leading-relaxed font-body italic">&quot;{referenceText}&quot;</p>
+                    {selectedBankText.notes && (
+                      <p className="text-xs text-on-surface-variant font-body border-t border-primary/10 pt-2">
+                        <span className="font-bold">Note :</span> {selectedBankText.notes}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Default display if no bank text selected */}
+                {!selectedBankText && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-on-surface-variant font-body">Texte par défaut : &quot;{referenceText}&quot;</p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* LECTURE LIBRE: text selector + custom input */}
+            {/* LECTURE LIBRE: text bank + custom input */}
             {analysisMode === 'lecture_libre' && (
               <div className="space-y-4">
                 <span className="font-headline uppercase tracking-widest text-primary font-bold text-sm bg-primary/5 px-4 py-1.5 rounded-full">Texte de Lecture</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                  {REFERENCE_TEXTS.map(t => (
+
+                {/* Filters */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <select
+                    value={gradeFilter}
+                    onChange={(e) => setGradeFilter(e.target.value as GradeLevel | 'all')}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-outline-variant/30 bg-surface text-on-surface font-body focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    <option value="all">Tous niveaux</option>
+                    {GRADE_LEVELS.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                  <div className="flex gap-1 flex-wrap">
+                    {TEXT_TARGETS.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setTargetFilter(t.value as TextTarget | 'all')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
+                          targetFilter === t.value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-outline-variant/20 text-on-surface-variant hover:border-primary/30'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Text list */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {filteredTexts.map(t => (
                     <button
                       key={t.id}
-                      onClick={() => { setReferenceText(t.text); setCustomReferenceText(''); }}
-                      className={`text-left p-3 rounded-lg border transition-all text-sm ${
-                        referenceText === t.text && !customReferenceText
-                          ? 'border-primary bg-primary/5' : 'border-outline-variant/20 hover:border-primary/30'
+                      onClick={() => handleSelectBankText(t)}
+                      className={`text-left p-3 rounded-lg border transition-all ${
+                        selectedBankText?.id === t.id && !customReferenceText
+                          ? 'border-primary bg-primary/5 shadow-sm'
+                          : 'border-outline-variant/20 hover:border-primary/30'
                       }`}
                     >
-                      <span className="font-bold text-on-surface">{t.label}</span>
-                      <span className="text-on-surface-variant ml-2">({t.grade})</span>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="font-bold text-sm text-on-surface truncate">{t.title}</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${DIFFICULTY_COLORS[t.difficulty]}`}>
+                          {'★'.repeat(DIFFICULTY_STARS[t.difficulty])}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                        <span>{t.gradeLevel.join('·')}</span>
+                        <span>·</span>
+                        <span>{t.wordCount} mots</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {t.phonologicalFeatures.slice(0, 2).map(f => (
+                          <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-outline-variant/10 text-on-surface-variant font-body">
+                            {f.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                      </div>
                     </button>
                   ))}
                 </div>
+
                 <textarea
                   placeholder="Ou collez votre propre texte ici..."
                   value={customReferenceText}
-                  onChange={(e) => setCustomReferenceText(e.target.value)}
+                  onChange={(e) => { setCustomReferenceText(e.target.value); setSelectedBankText(null); }}
                   className="w-full p-4 rounded-xl border border-outline-variant/20 bg-surface text-on-surface font-body text-sm min-h-[100px] focus:ring-2 focus:ring-primary/50 focus:outline-none"
                 />
+
                 {displayedReferenceText && (
-                  <div className="p-4 bg-surface-variant/30 rounded-xl border border-outline-variant/10">
+                  <div className="p-4 bg-surface-variant/30 rounded-xl border border-outline-variant/10 space-y-2">
+                    {selectedBankText && !customReferenceText && (
+                      <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+                        <span className="font-bold text-on-surface">{selectedBankText.title}</span>
+                        <span>·</span>
+                        <span>{selectedBankText.wordCount} mots</span>
+                        <span className={`font-bold px-1.5 py-0.5 rounded-full ${DIFFICULTY_COLORS[selectedBankText.difficulty]}`}>
+                          {'★'.repeat(DIFFICULTY_STARS[selectedBankText.difficulty])} {selectedBankText.difficulty}
+                        </span>
+                      </div>
+                    )}
                     <p className="text-sm text-on-surface leading-relaxed font-body italic">&quot;{displayedReferenceText}&quot;</p>
                   </div>
                 )}
@@ -507,6 +762,20 @@ export default function NewAnalysisPage() {
               </div>
             </div>
 
+            {/* Selected text info (when bank text selected) */}
+            {selectedBankText && (analysisMode === 'dictee' || analysisMode === 'lecture_libre') && (
+              <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
+                <p className="text-xs font-headline font-bold text-on-surface-variant mb-1">Texte sélectionné :</p>
+                <p className="text-sm font-bold text-on-surface">{selectedBankText.title}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-on-surface-variant">{selectedBankText.wordCount} mots</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${DIFFICULTY_COLORS[selectedBankText.difficulty]}`}>
+                    {'★'.repeat(DIFFICULTY_STARS[selectedBankText.difficulty])} {selectedBankText.difficulty}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {analysisMode !== 'dictee' && (
               <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-200 dark:border-orange-800/30">
                 <p className="text-xs text-orange-700 dark:text-orange-300 font-body">
@@ -607,5 +876,26 @@ export default function NewAnalysisPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+// ─── Page wrapper with Suspense boundary ──────────────────────────────────────
+
+export default function NewAnalysisPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-8 max-w-6xl mx-auto w-full">
+        <div>
+          <h1 className="font-headline font-extrabold text-3xl text-on-surface tracking-tight">Nouvelle Analyse</h1>
+          <p className="text-on-surface-variant mt-1 font-body">Chargement...</p>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-32 bg-surface-container-low rounded-xl" />
+          <div className="h-64 bg-surface-container-low rounded-xl" />
+        </div>
+      </div>
+    }>
+      <NewAnalysisContent />
+    </Suspense>
   );
 }

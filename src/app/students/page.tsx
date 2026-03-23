@@ -21,6 +21,7 @@ export default function StudentsPage() {
   const [riskFilter, setRiskFilter] = useState<RiskLevel | 'Tous'>('Tous');
   const [gradeFilter, setGradeFilter] = useState('Tous');
   const [sortBy, setSortBy] = useState<'name' | 'age' | 'risk' | 'date'>('name');
+  const [ulisOnly, setUlisOnly] = useState(false);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -45,6 +46,15 @@ export default function StudentsPage() {
     return ['Tous', ...Array.from(set).sort()];
   }, [students]);
 
+  // ── Stats ULIS ─────────────────────────────────────────────────────────
+  const ulisStudents = useMemo(() => students.filter(s => s.isUlisStudent), [students]);
+
+  // Pending consent parmi les élèves ULIS
+  const pendingConsentStudents = useMemo(
+    () => ulisStudents.filter(s => s.consentStatus === 'pending' || !s.consentStatus),
+    [ulisStudents]
+  );
+
   // Derived: filtered + sorted students
   const filtered = useMemo(() => {
     const riskOrder: Record<string, number> = { 'Risque Élevé': 0, 'Risque Modéré': 1, 'Non identifié': 2, 'Sain': 3 };
@@ -54,7 +64,8 @@ export default function StudentsPage() {
         const matchSearch = !q || `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) || s.grade.toLowerCase().includes(q);
         const matchRisk = riskFilter === 'Tous' || s.riskLevel === riskFilter;
         const matchGrade = gradeFilter === 'Tous' || s.grade === gradeFilter;
-        return matchSearch && matchRisk && matchGrade;
+        const matchUlis = !ulisOnly || s.isUlisStudent === true;
+        return matchSearch && matchRisk && matchGrade && matchUlis;
       })
       .sort((a, b) => {
         if (sortBy === 'name')  return `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`);
@@ -63,13 +74,13 @@ export default function StudentsPage() {
         if (sortBy === 'date')  return (b.lastAnalysisDate ?? '').localeCompare(a.lastAnalysisDate ?? '');
         return 0;
       });
-  }, [students, search, riskFilter, gradeFilter, sortBy]);
+  }, [students, search, riskFilter, gradeFilter, sortBy, ulisOnly]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [search, riskFilter, gradeFilter, sortBy]);
+  useEffect(() => { setPage(1); }, [search, riskFilter, gradeFilter, sortBy, ulisOnly]);
 
   const handleAdd = async () => {
     if (!form.firstName || !form.lastName || !form.grade || !form.age) return;
@@ -116,6 +127,8 @@ export default function StudentsPage() {
     return 'bg-surface-variant text-on-surface-variant border border-outline-variant/20';
   };
 
+  const hasActiveFilters = search || riskFilter !== 'Tous' || gradeFilter !== 'Tous' || ulisOnly;
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 w-full">
       {/* Header */}
@@ -127,7 +140,7 @@ export default function StudentsPage() {
           </Link>
           <h2 className="text-4xl font-headline font-bold text-on-surface tracking-tight">Gestion des Élèves</h2>
           <p className="text-on-surface-variant font-body mt-1">
-            {filtered.length} élève{filtered.length !== 1 ? 's' : ''} {search || riskFilter !== 'Tous' || gradeFilter !== 'Tous' ? 'filtrés' : 'enregistrés'}
+            {filtered.length} élève{filtered.length !== 1 ? 's' : ''} {hasActiveFilters ? 'filtrés' : 'enregistrés'}
             {students.length !== filtered.length && ` sur ${students.length}`}
           </p>
         </div>
@@ -139,6 +152,45 @@ export default function StudentsPage() {
           Ajouter un élève
         </button>
       </div>
+
+      {/* Bandeau stats ULIS */}
+      {ulisStudents.length > 0 && (
+        <div className="bg-[#8b5cf6]/5 rounded-2xl border border-[#8b5cf6]/20 p-5">
+          <div className="flex flex-wrap items-center gap-6">
+            {/* Total ULIS */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[#8b5cf6] text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
+              </div>
+              <div>
+                <p className="text-xs text-on-surface-variant font-label uppercase tracking-wide">Élèves ULIS</p>
+                <p className="font-headline font-bold text-2xl text-on-surface">{ulisStudents.length}</p>
+              </div>
+            </div>
+
+            <div className="w-px h-10 bg-outline-variant/20 hidden sm:block" />
+
+            {/* Alerte consentements en attente */}
+            {pendingConsentStudents.length > 0 && (
+              <button
+                onClick={() => { setUlisOnly(true); setRiskFilter('Tous'); setSearch(''); setGradeFilter('Tous'); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-tertiary/10 border border-tertiary/20 text-tertiary font-headline font-bold text-sm hover:bg-tertiary/20 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>pending</span>
+                {pendingConsentStudents.length} consentement{pendingConsentStudents.length > 1 ? 's' : ''} en attente
+              </button>
+            )}
+
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-on-surface-variant font-body italic">Pôle ULIS activé</span>
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#8b5cf6]/10 text-[#8b5cf6] border border-[#8b5cf6]/20 rounded-full text-xs font-bold">
+                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                Actif
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add form */}
       {showForm && (
@@ -223,10 +275,25 @@ export default function StudentsPage() {
             <option value="date">Trier : Date analyse</option>
           </select>
 
-          {/* Reset */}
-          {(search || riskFilter !== 'Tous' || gradeFilter !== 'Tous') && (
+          {/* Toggle ULIS */}
+          {ulisStudents.length > 0 && (
             <button
-              onClick={() => { setSearch(''); setRiskFilter('Tous'); setGradeFilter('Tous'); }}
+              onClick={() => setUlisOnly(v => !v)}
+              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border font-body text-sm transition-all ${
+                ulisOnly
+                  ? 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30 text-[#8b5cf6] font-bold'
+                  : 'border-outline-variant/30 text-on-surface-variant hover:border-[#8b5cf6]/30 hover:text-[#8b5cf6]'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: ulisOnly ? "'FILL' 1" : "'FILL' 0" }}>school</span>
+              ULIS uniquement
+            </button>
+          )}
+
+          {/* Reset */}
+          {hasActiveFilters && (
+            <button
+              onClick={() => { setSearch(''); setRiskFilter('Tous'); setGradeFilter('Tous'); setUlisOnly(false); }}
               className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:text-error hover:border-error/30 font-body text-sm transition-all"
             >
               <span className="material-symbols-outlined text-[16px]">filter_alt_off</span>
@@ -286,7 +353,14 @@ export default function StudentsPage() {
                     <td className="py-4 px-4">
                       <Link href={`/students/${student.id}`} className="flex items-center gap-3 hover:text-primary transition-colors">
                         <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shadow-sm">{student.initials}</div>
-                        <span className="font-headline font-bold text-on-surface">{student.firstName} {student.lastName}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-headline font-bold text-on-surface">{student.firstName} {student.lastName}</span>
+                          {student.isUlisStudent && (
+                            <span className="inline-flex items-center px-2 py-0.5 bg-[#8b5cf6]/10 text-[#8b5cf6] border border-[#8b5cf6]/20 rounded-full text-[10px] font-bold">
+                              ULIS
+                            </span>
+                          )}
+                        </div>
                       </Link>
                     </td>
                     <td className="py-4 px-4 text-on-surface-variant">{student.grade}</td>

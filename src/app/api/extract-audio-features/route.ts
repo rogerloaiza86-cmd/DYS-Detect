@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server';
 import { AudioMetadata } from '@/lib/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { requireUser, unauthorized } from '@/lib/api-auth';
+import { checkRoute, rateLimited } from '@/lib/rate-limit';
+
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25 Mo
 
 export async function POST(request: Request) {
   try {
+    if (!checkRoute(request, 'extract-audio', 10)) return rateLimited();
+    if (!(await requireUser(request))) return unauthorized();
+
     const formData = await request.formData();
     const audioContent = formData.get('audio') as Blob;
 
     if (!audioContent) {
       return NextResponse.json({ error: "Aucun fichier audio fourni" }, { status: 400 });
+    }
+    if (audioContent.size > MAX_AUDIO_BYTES) {
+      return NextResponse.json({ error: "Fichier audio trop volumineux (25 Mo max)" }, { status: 413 });
+    }
+    if (audioContent.type && !audioContent.type.startsWith('audio/') && !audioContent.type.startsWith('video/webm')) {
+      return NextResponse.json({ error: "Format audio non supporté" }, { status: 415 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { getStudents, getResults, getDiagnosticLabels } from '@/lib/store';
+import { authFetch } from '@/lib/auth';
 import { extractTextFeatures, extractAudioFeatures, mergeFeatures, FeatureVector, FEATURE_LABELS } from '@/lib/features';
 import { Student, AnalysisResult, DiagnosticLabel, DisorderCategory } from '@/lib/types';
 import { exportAnalysesCSV } from '@/lib/export-csv';
@@ -101,7 +102,7 @@ export default function ResearchPage() {
   const handleExport = async (format: 'csv' | 'jsonl') => {
     setExporting(true);
     try {
-      const res = await fetch(`/api/export-training-data?format=${format}`);
+      const res = await authFetch(`/api/export-training-data?format=${format}`);
       if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

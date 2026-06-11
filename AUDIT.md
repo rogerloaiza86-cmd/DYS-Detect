@@ -4,7 +4,7 @@
 
 ---
 
-## 1. Avancement global : **≈ 65 %**
+## 1. Avancement global : **≈ 80 %**
 
 | Domaine | Poids | Avancement | Détail |
 |---|---|---|---|
@@ -12,8 +12,8 @@
 | Gestion élèves & suivi longitudinal | 10 % | 95 % | CRUD, filtres, graphiques, consentements |
 | Exports (PDF, ESS, CSV/JSONL recherche) | 10 % | 90 % | Pseudonymisation OK, filtre consentement OK |
 | Identité & page d'accueil | 5 % | 100 % | ✅ Charte v1.0 appliquée, accueil créé (ce commit) |
-| Authentification & multi-tenant | 15 % | 0 % | Absente — bloquant production |
-| Sécurisation (RLS, rate limiting, validation serveur) | 10 % | 25 % | Headers ajoutés (ce commit) ; RLS publiques |
+| Authentification & multi-tenant | 15 % | 90 % | ✅ Supabase Auth + page /login + garde portail (Phase A) |
+| Sécurisation (RLS, rate limiting, validation serveur) | 10 % | 85 % | ✅ Migration v4 RLS par enseignant, rate limiting, validation serveur |
 | Tests automatisés & CI/CD | 10 % | 0 % | Aucun test, aucun workflow |
 | Analyse vidéo (Phase 3) | 5 % | 15 % | Interfaces + migration prêtes, extraction mock |
 
@@ -35,10 +35,10 @@
 
 | # | Constat | Gravité | Fichier |
 |---|---|---|---|
-| S1 | **Policies RLS Supabase publiques** (`USING (true)`) : lecture/écriture/suppression des données d'élèves mineurs par quiconque possède l'URL | 🔴 Critique | `supabase_migration.sql:40-62`, `_v2.sql:61-70` |
-| S2 | **Aucune authentification** : pas d'isolation multi-enseignant | 🔴 Critique | toute l'app |
-| S3 | **Pas de rate limiting** sur les routes API → abus possible des quotas Gemini/Claude | 🟠 Haute | `src/app/api/*` |
-| S4 | **Validation serveur partielle** : pas de limite de taille audio/image, pas de contrôle MIME côté serveur | 🟠 Haute | `api/transcribe`, `api/analyze` |
+| S1 | ~~Policies RLS publiques~~ → **corrigé** : policies par enseignant (`teacher_id = auth.uid()`), à appliquer via `supabase_migration_v4_auth.sql` | ✅ Réglé | `supabase_migration_v4_auth.sql` |
+| S2 | ~~Aucune authentification~~ → **corrigé** : Supabase Auth (e-mail/mot de passe), page `/login`, garde sur le portail, jeton vérifié côté serveur | ✅ Réglé | `src/lib/auth.ts`, `src/lib/api-auth.ts`, `src/app/login` |
+| S3 | ~~Pas de rate limiting~~ → **corrigé** : fenêtre glissante par IP sur les 6 routes (in-memory ; passer à Upstash/Redis en multi-instances) | ✅ Réglé | `src/lib/rate-limit.ts` |
+| S4 | ~~Validation serveur partielle~~ → **corrigé** : tailles max (audio 25 Mo, image 5 Mo, vidéo 100 Mo), MIME, longueur transcription, bornes d'âge | ✅ Réglé | `src/app/api/*` |
 | S5 | ~~Headers de sécurité absents~~ → **corrigé** (X-Frame-Options, nosniff, HSTS, Permissions-Policy) | ✅ Réglé | `next.config.ts` |
 | S6 | ~~`.env.example` absent~~ → **corrigé** | ✅ Réglé | `.env.example` |
 | S7 | Noms d'élèves stockés en clair (les exports recherche sont pseudonymisés P001…) | 🟡 Moyen | table `students` |
@@ -57,11 +57,13 @@
 
 ## 5. Feuille de route vers 100 %
 
-### Phase A — Sécurisation (bloquant production) · ~5 j
-- [ ] **A1.** Authentification NextAuth.js ou Clerk (comptes enseignants) — 3 j
-- [ ] **A2.** Remplacer les policies RLS publiques par des policies `auth.uid()` (chaque enseignant ne voit que ses élèves) — 1 j
-- [ ] **A3.** Rate limiting sur les 6 routes API (Vercel/Upstash) — 0,5 j
-- [ ] **A4.** Validation serveur : taille max audio 50 Mo / image 5 Mo, contrôle MIME, bornes d'âge — 0,5 j
+### Phase A — Sécurisation (bloquant production) · ✅ TERMINÉE
+
+> Action manuelle restante : exécuter `supabase_migration_v4_auth.sql` dans Supabase > SQL Editor et activer le provider Email (Authentication > Providers).
+- [x] **A1.** Authentification Supabase Auth (comptes enseignants, page /login, garde portail) ✅
+- [x] **A2.** Policies RLS par enseignant (`supabase_migration_v4_auth.sql` — à exécuter dans Supabase) ✅
+- [x] **A3.** Rate limiting par IP sur les 6 routes API ✅
+- [x] **A4.** Validation serveur : tailles max, contrôle MIME, bornes d'âge ✅
 
 ### Phase B — Qualité & industrialisation · ~6 j
 - [ ] **B1.** Tests unitaires du cœur métier (`features.ts`, `store.ts`, `prompts/builder.ts`) avec Vitest — 3 j
@@ -81,4 +83,4 @@
 - [ ] **D1.** Intégration MediaPipe Holistic dans `api/extract-video-features` (regard, clignements, stéréotypies)
 - [ ] **D2.** Validation clinique des marqueurs vidéo avec un partenaire CRA
 
-**Estimation : ~15 jours de développement pour atteindre 100 % du MVP production-ready (hors Phase D).**
+**Estimation restante : ~10 jours de développement pour atteindre 100 % du MVP production-ready (hors Phase D).**

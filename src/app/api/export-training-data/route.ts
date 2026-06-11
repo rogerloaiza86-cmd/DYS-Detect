@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase as anonClient } from '@/lib/supabase';
 import { extractTextFeatures, extractAudioFeatures, mergeFeatures } from '@/lib/features';
+import { requireUser, unauthorized } from '@/lib/api-auth';
+import { checkRoute, rateLimited } from '@/lib/rate-limit';
 
 /**
  * GET /api/export-training-data?format=jsonl|csv
@@ -16,6 +18,12 @@ import { extractTextFeatures, extractAudioFeatures, mergeFeatures } from '@/lib/
  */
 export async function GET(request: Request) {
   try {
+    if (!checkRoute(request, 'export-training', 5)) return rateLimited();
+    const auth = await requireUser(request);
+    if (!auth) return unauthorized();
+    // Client porteur du jeton : RLS limite l'export aux élèves de l'enseignant
+    const supabase = auth.supabase ?? anonClient;
+
     const url = new URL(request.url);
     const format = url.searchParams.get('format') || 'jsonl';
 

@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AudioRecorder from '@/components/AudioRecorder';
 import { getStudents, createStudent, saveResult, getResultById } from '@/lib/store';
+import { authFetch } from '@/lib/auth';
 import { Student, AnalysisMode, ANALYSIS_MODES, EXPRESSION_TOPICS, CONVERSATION_QUESTIONS, AudioMetadata } from '@/lib/types';
 import { TEXTS_BANK, ReferenceText, GradeLevel, TextTarget } from '@/lib/texts-bank';
 import Link from 'next/link';
@@ -222,7 +223,7 @@ function NewAnalysisContent() {
       formData.append('audio', recordedBlob);
       formData.append('studentId', selectedStudent);
 
-      const transcribeRes = await fetch('/api/transcribe', {
+      const transcribeRes = await authFetch('/api/transcribe', {
         method: 'POST',
         body: formData,
       });
@@ -238,7 +239,7 @@ function NewAnalysisContent() {
         try {
           const audioFormData = new FormData();
           audioFormData.append('audio', recordedBlob);
-          const audioRes = await fetch('/api/extract-audio-features', {
+          const audioRes = await authFetch('/api/extract-audio-features', {
             method: 'POST',
             body: audioFormData,
           });
@@ -263,7 +264,7 @@ function NewAnalysisContent() {
         : analysisMode === 'lecture_libre' ? (customReferenceText || referenceText)
         : undefined;
 
-      const analyzeRes = await fetch('/api/analyze', {
+      const analyzeRes = await authFetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

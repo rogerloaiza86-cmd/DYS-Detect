@@ -28,11 +28,20 @@ cp .env.example .env.local   # renseigner les clés API
 npm run dev
 ```
 
-Sans clés API, l'application fonctionne en mode démonstration (données mock).
+Sans clés API, l'application fonctionne en mode démonstration (données mock,
+authentification désactivée).
+
+### Base de données & authentification
+
+Exécuter les migrations `supabase_migration*.sql` dans l'ordre (v1 → v4) via
+Supabase > SQL Editor, et activer le provider **Email** (Authentication >
+Providers). La migration v4 instaure l'isolation par enseignant : chaque
+compte ne voit que ses propres élèves (RLS `teacher_id = auth.uid()`).
 
 ## Structure
 
 - `/` — page d'accueil publique (charte Geronimo v1.0)
+- `/login` — connexion / création de compte enseignant
 - `/dashboard` — portail enseignant (stats, élèves récents)
 - `/new-analysis` — analyse multimodale (4 modes : dictée, lecture, expression, conversation)
 - `/students` — gestion des élèves, historique longitudinal

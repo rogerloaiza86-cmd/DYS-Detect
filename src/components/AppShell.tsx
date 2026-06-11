@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import UserProfileHeader from '@/components/UserProfileHeader';
 import { getStudents, getResultsByStudent, hasCompletedOnboarding } from '@/lib/store';
+import { getSession, onAuthChange, signOut, isSupabaseConfigured } from '@/lib/auth';
 import { Student, UserProfile } from '@/lib/types';
 import OnboardingModal from '@/components/OnboardingModal';
 
@@ -29,7 +30,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [authChecked, setAuthChecked] = useState(!isSupabaseConfigured);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  // ── Garde d'authentification (désactivée en mode démo) ─────
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    getSession().then(session => {
+      if (!session) router.replace('/login');
+      else setAuthChecked(true);
+    });
+    return onAuthChange(session => {
+      if (!session) router.replace('/login');
+    });
+  }, [router]);
 
   // ── Init ───────────────────────────────────────────────────
   useEffect(() => {
@@ -117,6 +131,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {!authChecked ? (
+        <div className="fixed inset-0 bg-surface flex items-center justify-center" aria-busy="true">
+          <p className="font-headline text-2xl text-primary flex items-center gap-2">
+            Geronimo <span className="text-accent animate-pulse" aria-hidden="true">★</span>
+          </p>
+        </div>
+      ) : (
+      <>
       {/* ── Mobile overlay ───────────────────────────────────── */}
       {isSidebarOpen && (
         <div
@@ -169,6 +191,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </span>
             <span className="font-headline text-sm">{isDarkMode ? 'Mode clair' : 'Mode sombre'}</span>
           </button>
+
+          {/* Déconnexion (auth Supabase) */}
+          {isSupabaseConfigured && (
+            <button
+              onClick={async () => { await signOut(); router.replace('/login'); }}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-highest/50 transition-all"
+            >
+              <span className="material-symbols-outlined">logout</span>
+              <span className="font-headline text-sm">Se déconnecter</span>
+            </button>
+          )}
 
           <Link
             href="/new-analysis"
@@ -326,6 +359,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ── Onboarding ────────────────────────────────────────── */}
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
+      </>
+      )}
     </>
   );
 }

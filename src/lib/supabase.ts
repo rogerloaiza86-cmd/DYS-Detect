@@ -6,4 +6,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
+// Mode démonstration : sans projet Supabase, l'authentification et la
+// persistance sont désactivées (données mock, accès libre au portail).
+export const isSupabaseConfigured =
+  !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  !supabaseUrl.includes('placeholder');
+
 export const supabase = createClient(supabaseUrl, supabaseKey);

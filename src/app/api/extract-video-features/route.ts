@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import { VideoMetadata } from '@/lib/types';
+import { requireUser, unauthorized } from '@/lib/api-auth';
+import { checkRoute, rateLimited } from '@/lib/rate-limit';
+
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 Mo
 
 /**
  * POST /api/extract-video-features
@@ -18,6 +22,9 @@ import { VideoMetadata } from '@/lib/types';
  */
 export async function POST(request: Request) {
   try {
+    if (!checkRoute(request, 'extract-video', 5)) return rateLimited();
+    if (!(await requireUser(request))) return unauthorized();
+
     const formData = await request.formData();
     const videoContent = formData.get('video') as Blob | null;
 
@@ -26,6 +33,12 @@ export async function POST(request: Request) {
         { error: 'Aucun fichier vidéo fourni' },
         { status: 400 },
       );
+    }
+    if (videoContent.size > MAX_VIDEO_BYTES) {
+      return NextResponse.json({ error: 'Fichier vidéo trop volumineux (100 Mo max)' }, { status: 413 });
+    }
+    if (videoContent.type && !videoContent.type.startsWith('video/')) {
+      return NextResponse.json({ error: 'Format vidéo non supporté' }, { status: 415 });
     }
 
     // TODO: Integrate MediaPipe Holistic for real computer-vision extraction.

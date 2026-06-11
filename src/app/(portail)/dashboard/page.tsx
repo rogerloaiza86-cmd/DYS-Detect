@@ -16,8 +16,8 @@ export default function DashboardPage() {
     Promise.all([getStudents(), getResults()]).then(([s, r]) => {
       setStudents(s);
       setResults(r);
+      setProfile(getProfile());
     });
-    setProfile(getProfile());
   }, []);
 
   const totalStudents = students.length;
@@ -137,7 +137,7 @@ export default function DashboardPage() {
                           onClick={() => router.push(`/results/${lastResultId}`)}
                           className="px-6 py-2 border-2 border-primary/10 text-primary font-headline font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all active:scale-95"
                         >
-                          Voir l'analyse
+                          Voir l’analyse
                         </button>
                       ) : (
                         <button
@@ -171,7 +171,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <h4 className="font-headline font-bold text-primary text-xl mb-1">Aperçu Hebdomadaire</h4>
-            <p className="text-on-surface-variant font-body">Pensez à faire passer les tests d'évaluation périodiques cette semaine.</p>
+            <p className="text-on-surface-variant font-body">Pensez à faire passer les tests d’évaluation périodiques cette semaine.</p>
           </div>
         </div>
         <div className="bg-secondary-container/20 p-8 rounded-xl border-2 border-secondary/10 flex items-center gap-6">

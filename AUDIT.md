@@ -4,7 +4,7 @@
 
 ---
 
-## 1. Avancement global : **≈ 80 %**
+## 1. Avancement global : **≈ 90 %**
 
 | Domaine | Poids | Avancement | Détail |
 |---|---|---|---|
@@ -13,8 +13,8 @@
 | Exports (PDF, ESS, CSV/JSONL recherche) | 10 % | 90 % | Pseudonymisation OK, filtre consentement OK |
 | Identité & page d'accueil | 5 % | 100 % | ✅ Charte v1.0 appliquée, accueil créé (ce commit) |
 | Authentification & multi-tenant | 15 % | 90 % | ✅ Supabase Auth + page /login + garde portail (Phase A) |
-| Sécurisation (RLS, rate limiting, validation serveur) | 10 % | 85 % | ✅ Migration v4 RLS par enseignant, rate limiting, validation serveur |
-| Tests automatisés & CI/CD | 10 % | 0 % | Aucun test, aucun workflow |
+| Sécurisation (RLS, rate limiting, validation serveur) | 10 % | 90 % | ✅ Migration v4 RLS par enseignant, rate limiting, validation serveur |
+| Tests automatisés & CI/CD | 10 % | 80 % | ✅ Vitest (24 tests cœur métier) + CI GitHub Actions (lint/typecheck/tests/build) |
 | Analyse vidéo (Phase 3) | 5 % | 15 % | Interfaces + migration prêtes, extraction mock |
 
 ---
@@ -65,22 +65,22 @@
 - [x] **A3.** Rate limiting par IP sur les 6 routes API ✅
 - [x] **A4.** Validation serveur : tailles max, contrôle MIME, bornes d'âge ✅
 
-### Phase B — Qualité & industrialisation · ~6 j
-- [ ] **B1.** Tests unitaires du cœur métier (`features.ts`, `store.ts`, `prompts/builder.ts`) avec Vitest — 3 j
-- [ ] **B2.** CI GitHub Actions : lint + typecheck + tests + build sur chaque PR — 1 j
-- [ ] **B3.** Nettoyage du repo : supprimer `build.log`, `build_output*.txt`, `eslint_report*`, `lint_output.txt`, `dashboard.html` racine — 0,5 j
-- [ ] **B4.** Timeouts explicites (30 s) et messages d'erreur homogènes sur les appels IA — 1 j
-- [ ] **B5.** Audit responsive mobile complet (formulaire new-analysis en priorité) — 0,5 j
+### Phase B — Qualité & industrialisation · ✅ TERMINÉE
+- [x] **B1.** Tests unitaires Vitest : `features`, `rate-limit`, `prompts/builder`, `texts-bank` (24 tests) ✅
+- [x] **B2.** CI GitHub Actions : lint + typecheck + tests + build (`.github/workflows/ci.yml`) ✅
+- [x] **B3.** Repo nettoyé (artefacts de build/lint supprimés et ignorés) + 0 erreur ESLint sur tout le projet ✅
+- [x] **B4.** Timeouts 60 s sur les appels Gemini/Claude, réponse 504 dédiée ✅
+- [x] **B5.** Vérification responsive (390 px) : accueil et portail OK ✅
 
-### Phase C — Expérience produit · ~4 j
+### Phase C — Expérience produit · ✅ TERMINÉE
 - [x] **C1.** Page d'accueil publique conforme à la charte ✅ (ce commit)
 - [x] **C2.** Rebranding complet « Geronimo Éclaireur » + nouvelle charte graphique ✅ (ce commit)
-- [ ] **C3.** Notifications réelles (centre de notifications actionnable, e-mail optionnel) — 2 j
-- [ ] **C4.** Logo SVG définitif (enfant + étoile + vague de la charte) en remplacement du mark provisoire, favicon assorti — 1 j
-- [ ] **C5.** Pages publiques complémentaires : mentions légales, politique de confidentialité RGPD — 1 j
+- [x] **C3.** Centre de notifications avec état lu/non-lu persisté et « Tout marquer comme lu » (e-mails : non inclus, voir reste à faire) ✅
+- [x] **C4.** Logo SVG définitif (enfant + étoile + vague) sur accueil/portail/login + favicon `icon.svg` ✅
+- [x] **C5.** Pages `/mentions-legales` et `/confidentialite` (RGPD), liées au footer — champs éditeur à compléter ✅
 
 ### Phase D — Phase 3 vidéo (optionnel, après MVP) · ~10-15 j
 - [ ] **D1.** Intégration MediaPipe Holistic dans `api/extract-video-features` (regard, clignements, stéréotypies)
 - [ ] **D2.** Validation clinique des marqueurs vidéo avec un partenaire CRA
 
-**Estimation restante : ~10 jours de développement pour atteindre 100 % du MVP production-ready (hors Phase D).**
+**Reste à faire pour 100 %** : élargir la couverture de tests (store, routes API), notifications par e-mail (optionnel), compléter les champs éditeur des mentions légales, faire valider la classification TDAH par un professionnel partenaire — puis Phase D (vidéo MediaPipe) après le MVP. **Estimation : ~2-3 jours hors Phase D.**

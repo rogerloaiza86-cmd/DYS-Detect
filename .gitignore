@@ -42,3 +42,9 @@ next-env.d.ts
 
 # garder le template d'environnement
 !.env.example
+
+# artefacts locaux
+build*.log
+build_output*.txt
+lint_output*.txt
+eslint_report*.json

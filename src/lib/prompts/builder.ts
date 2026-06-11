@@ -114,7 +114,6 @@ export function buildAnalysisPrompt(opts: PromptOptions): string {
   const hasVideoMeta = !!opts.videoMetadata;
 
   // Determine which disorder categories are most relevant for this mode
-  const analyzeDys = opts.mode === 'dictee' || opts.mode === 'lecture_libre';
   const analyzeTdah = opts.mode !== 'dictee'; // All modes except pure dictation
   const analyzeTsa = opts.mode === 'expression_libre' || opts.mode === 'conversation_guidee';
 

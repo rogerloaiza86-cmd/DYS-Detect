@@ -121,6 +121,7 @@ export async function POST(request: Request) {
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: AbortSignal.timeout(60_000),
       headers: {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
@@ -175,6 +176,9 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error("Erreur dans '/api/analyze':", error);
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      return NextResponse.json({ error: "L'analyse IA a dépassé le délai (60 s) — réessayez" }, { status: 504 });
+    }
     return NextResponse.json({ error: "Erreur interne au traitement IA" }, { status: 500 });
   }
 }

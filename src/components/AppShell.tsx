@@ -8,6 +8,7 @@ import { getStudents, getResultsByStudent, hasCompletedOnboarding } from '@/lib/
 import { getSession, onAuthChange, signOut, isSupabaseConfigured } from '@/lib/auth';
 import { Student, UserProfile } from '@/lib/types';
 import OnboardingModal from '@/components/OnboardingModal';
+import LogoMark from '@/components/LogoMark';
 
 const navItems = [
   { href: '/dashboard', label: 'Tableau de bord', icon: 'dashboard' },
@@ -31,6 +32,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [authChecked, setAuthChecked] = useState(!isSupabaseConfigured);
+  const [seenNotifIds, setSeenNotifIds] = useState<string[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
 
   // ── Garde d'authentification (désactivée en mode démo) ─────
@@ -50,6 +52,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setShowOnboarding(!hasCompletedOnboarding());
     getStudents().then(setAllStudents);
 
+    // Notifications déjà consultées
+    try {
+      setSeenNotifIds(JSON.parse(localStorage.getItem('geronimo-notif-seen') ?? '[]'));
+    } catch { /* liste corrompue : repartir de zéro */ }
+
     // Dark mode
     const saved = localStorage.getItem('geronimo-dark-mode');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -64,10 +71,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     localStorage.setItem('geronimo-dark-mode', String(isDarkMode));
   }, [isDarkMode]);
 
-  // Close sidebar on route change (mobile)
-  useEffect(() => {
+  // Close sidebar on route change (mobile) — ajustement pendant le rendu
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
     setIsSidebarOpen(false);
-  }, [pathname]);
+  }
 
   // Close notifications on outside click
   useEffect(() => {
@@ -111,7 +120,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   // ── Onboarding ─────────────────────────────────────────────
-  const handleOnboardingComplete = (profile: UserProfile) => {
+  const handleOnboardingComplete = (_profile: UserProfile) => {
     setShowOnboarding(false);
     getStudents().then(setAllStudents);
     router.refresh();
@@ -120,7 +129,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // ── Notifications ──────────────────────────────────────────
   const highRisk = allStudents.filter(s => s.riskLevel === 'Risque Élevé');
   const unanalyzed = allStudents.filter(s => s.riskLevel === 'Non identifié');
-  const notifCount = highRisk.length + unanalyzed.length;
+  const notifStudents = [...highRisk, ...unanalyzed];
+  // Le badge ne compte que les alertes non consultées
+  const notifCount = notifStudents.filter(s => !seenNotifIds.includes(s.id)).length;
+
+  const markAllNotifsRead = () => {
+    const ids = notifStudents.map(s => s.id);
+    setSeenNotifIds(ids);
+    localStorage.setItem('geronimo-notif-seen', JSON.stringify(ids));
+  };
 
   const riskBadge = (level: string) => {
     if (level === 'Risque Élevé') return 'bg-error-container/20 text-error';
@@ -150,9 +167,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* ── SideNavBar ───────────────────────────────────────── */}
       <aside className={`fixed inset-y-0 left-0 w-64 flex flex-col p-6 gap-8 bg-surface-container-low border-r border-outline-variant/10 z-50 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <Link href="/" className="flex flex-col gap-1">
-          <h1 className="font-headline text-2xl text-primary flex items-center gap-1.5">
+          <h1 className="font-headline text-2xl text-primary flex items-center gap-2">
+            <LogoMark className="w-8 h-8 shrink-0" />
             Geronimo
-            <span className="text-accent" aria-hidden="true">★</span>
           </h1>
           <p className="font-label text-xs text-on-surface-variant tracking-wider uppercase opacity-70">L’éclaireur de l’école inclusive</p>
         </Link>
@@ -286,12 +303,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
             {showNotifications && (
               <div className="absolute right-0 top-full mt-2 w-80 bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/20 z-50 overflow-hidden">
-                <div className="p-4 border-b border-outline-variant/10">
+                <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between gap-3">
                   <h3 className="font-headline font-bold text-on-surface text-sm">Alertes & Notifications</h3>
+                  {notifCount > 0 && (
+                    <button
+                      onClick={markAllNotifsRead}
+                      className="text-xs font-bold text-primary hover:underline whitespace-nowrap"
+                    >
+                      Tout marquer comme lu
+                    </button>
+                  )}
                 </div>
 
                 <div className="max-h-72 overflow-y-auto">
-                  {notifCount === 0 ? (
+                  {notifStudents.length === 0 ? (
                     <div className="p-8 text-center">
                       <span className="material-symbols-outlined text-4xl text-secondary mb-2 block" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                       <p className="text-on-surface-variant font-body text-sm">Tout est en ordre !</p>

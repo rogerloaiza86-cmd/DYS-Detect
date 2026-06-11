@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const base64Audio = Buffer.from(arrayBuffer).toString('base64');
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' }, { timeout: 60_000 });
 
     const result = await model.generateContent([
       {

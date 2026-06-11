@@ -1,7 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getStudentById, getResultsByStudent, getDiagnosticLabels } from '@/lib/store';
 import { Student, AnalysisResult, DiagnosticLabel, DisorderCategory } from '@/lib/types';
@@ -28,7 +27,6 @@ const DEFAULT_LINE_COLOR = '#64748b';
 
 export default function StudentHistoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const [student, setStudent] = useState<Student | null>(null);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const [diagnosticLabels, setDiagnosticLabels] = useState<DiagnosticLabel[]>([]);

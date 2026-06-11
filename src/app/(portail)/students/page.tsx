@@ -26,8 +26,6 @@ export default function StudentsPage() {
   // Pagination
   const [page, setPage] = useState(1);
 
-  useEffect(() => { loadStudents(); }, []);
-
   const loadStudents = async () => {
     setLoading(true);
     const list = await getStudents();
@@ -39,6 +37,8 @@ export default function StudentsPage() {
     setAnalysisCounts(counts);
     setLoading(false);
   };
+
+  useEffect(() => { loadStudents(); }, []);
 
   // Derived: unique grade list
   const grades = useMemo(() => {

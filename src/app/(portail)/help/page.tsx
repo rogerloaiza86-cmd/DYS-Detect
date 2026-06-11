@@ -165,7 +165,7 @@ export default function HelpPage() {
         <span className="material-symbols-outlined text-4xl text-primary mb-3 block" style={{ fontVariationSettings: "'FILL' 1" }}>support_agent</span>
         <h3 className="font-headline font-bold text-on-surface text-xl mb-2">Prêt à analyser ?</h3>
         <p className="text-on-surface-variant font-body text-sm mb-6">
-          Geronimo Éclaireur est un outil d'aide au repérage précoce. Les indicateurs générés orientent vers les professionnels compétents — ils ne constituent pas une évaluation clinique.
+          Geronimo Éclaireur est un outil d’aide au repérage précoce. Les indicateurs générés orientent vers les professionnels compétents — ils ne constituent pas une évaluation clinique.
         </p>
         <Link href="/new-analysis" className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-on-primary rounded-xl font-headline font-bold hover:bg-primary-dim transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-primary/20">
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>mic</span>

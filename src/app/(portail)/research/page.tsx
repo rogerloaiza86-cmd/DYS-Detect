@@ -223,7 +223,7 @@ export default function ResearchPage() {
             Matrice de comparaison des variables
           </h2>
           <p className="text-sm text-on-surface-variant mt-1">
-            Moyenne de chaque variable par groupe d'orientation. Les écarts significatifs révèlent les indicateurs discriminants.
+            Moyenne de chaque variable par groupe d’orientation. Les écarts significatifs révèlent les indicateurs discriminants.
           </p>
         </div>
 

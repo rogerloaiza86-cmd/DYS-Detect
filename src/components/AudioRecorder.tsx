@@ -156,7 +156,7 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing = fals
             <div className="w-full h-24 flex items-center justify-center gap-[4px] px-8">
               {Array.from({ length: 30 }).map((_, i) => {
                 // A simulated wave based on volume
-                const waveMath = Math.sin(i + (Date.now()/500)) * 0.5 + 0.5;
+                const waveMath = Math.sin(i + recordingTime * 2) * 0.5 + 0.5;
                 const heightPercent = Math.max(10, volume * waveMath);
                 return (
                   <div 
@@ -170,7 +170,7 @@ export default function AudioRecorder({ onRecordingComplete, isProcessing = fals
             <p className="text-on-surface-variant font-medium font-body">Enregistrement en cours... {formatTime(recordingTime)}</p>
           </>
         ) : (
-          <p className="text-on-surface-variant font-medium mt-auto font-body">Touchez le micro pour démarrer l'enregistrement</p>
+          <p className="text-on-surface-variant font-medium mt-auto font-body">Touchez le micro pour démarrer l’enregistrement</p>
         )}
       </div>
     </div>

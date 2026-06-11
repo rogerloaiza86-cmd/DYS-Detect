@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LogoMark from "@/components/LogoMark";
 
 /* ─── Page d'accueil publique · charte Geronimo Éclaireur v1.0 ───
    Héro marine + constellation, Fraunces pour la voix, boutons
@@ -52,8 +53,8 @@ export default function AccueilPage() {
 
       {/* ── Navigation ─────────────────────────────────────────── */}
       <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 lg:px-16 py-6">
-        <div className="flex items-center gap-2">
-          <StarMark className="w-6 h-6 text-[#f4b942]" />
+        <div className="flex items-center gap-2.5">
+          <LogoMark className="w-9 h-9" color="#f7f3ec" />
           <span className="font-headline text-2xl text-[#f7f3ec]">Geronimo</span>
         </div>
         <div className="flex items-center gap-6">
@@ -192,14 +193,16 @@ export default function AccueilPage() {
         <div className="max-w-6xl mx-auto px-6 lg:px-16 py-14 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <StarMark className="w-5 h-5 text-[#f4b942]" />
+              <LogoMark className="w-7 h-7" color="#f7f3ec" />
               <span className="font-headline text-xl">Geronimo</span>
             </div>
             <p className="font-body text-sm text-[#f7f3ec]/70">« Aucun enfant ne doit avancer seul. »</p>
           </div>
-          <div className="flex items-center gap-8 font-body text-sm text-[#f7f3ec]/80">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-2 font-body text-sm text-[#f7f3ec]/80">
             <Link href="/dashboard" className="hover:text-[#f4b942] transition-colors">Portail</Link>
             <Link href="/help" className="hover:text-[#f4b942] transition-colors">Ressources</Link>
+            <Link href="/mentions-legales" className="hover:text-[#f4b942] transition-colors">Mentions légales</Link>
+            <Link href="/confidentialite" className="hover:text-[#f4b942] transition-colors">Confidentialité</Link>
             <a href="mailto:contact@geronimo.fr" className="hover:text-[#f4b942] transition-colors">Contact</a>
           </div>
           <p className="font-body text-xs text-[#f7f3ec]/50">@geronimo.eclaireur · Charte v1.0</p>

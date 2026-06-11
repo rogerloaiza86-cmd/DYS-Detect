@@ -67,13 +67,13 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                 <div className="relative z-10">
                   <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full mb-8">
                     <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                    <span className="text-xs font-headline font-bold tracking-widest uppercase">Outil d'aide au repérage précoce</span>
+                    <span className="text-xs font-headline font-bold tracking-widest uppercase">Outil d’aide au repérage précoce</span>
                   </div>
                   <h1 className="font-headline font-black text-4xl leading-tight mb-4">
                     Bienvenue sur<br />Geronimo Éclaireur
                   </h1>
                   <p className="font-body text-on-primary/80 text-lg leading-relaxed">
-                    La plateforme d'aide au repérage et à l'orientation des troubles d'apprentissage (DYS, TDAH, TSA) vers les professionnels compétents.
+                    La plateforme d’aide au repérage et à l’orientation des troubles d’apprentissage (DYS, TDAH, TSA) vers les professionnels compétents.
                   </p>
                 </div>
 
@@ -240,7 +240,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                 </div>
 
                 <p className="text-xs text-on-surface-variant/60 font-body mt-8 text-center max-w-xs leading-relaxed">
-                  Vous pourrez modifier ces informations à tout moment depuis l'icône de profil en haut à droite.
+                  Vous pourrez modifier ces informations à tout moment depuis l’icône de profil en haut à droite.
                 </p>
               </div>
             </div>

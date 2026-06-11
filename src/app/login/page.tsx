@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, signUp, getSession, isSupabaseConfigured } from '@/lib/auth';
+import LogoMark from '@/components/LogoMark';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,8 +53,8 @@ export default function LoginPage() {
       ))}
 
       <nav className="flex items-center justify-between px-6 lg:px-16 py-6">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-[#f4b942]" aria-hidden="true">★</span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <LogoMark className="w-9 h-9" color="#f7f3ec" />
           <span className="font-headline text-2xl">Geronimo</span>
         </Link>
         <Link href="/" className="text-[#f7f3ec]/70 hover:text-[#f4b942] font-body text-sm transition-colors">

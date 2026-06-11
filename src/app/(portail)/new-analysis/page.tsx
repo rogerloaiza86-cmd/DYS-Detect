@@ -64,7 +64,6 @@ function NewAnalysisContent() {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -176,7 +175,6 @@ function NewAnalysisContent() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -186,14 +184,12 @@ function NewAnalysisContent() {
   };
 
   const removeImage = () => {
-    setImageFile(null);
     setImagePreview(null);
   };
 
   const handleModeChange = (mode: AnalysisMode) => {
     setAnalysisMode(mode);
     setRecordedBlob(null);
-    setImageFile(null);
     setImagePreview(null);
     setConversationStep(0);
     setIsConversationActive(false);

@@ -2,7 +2,7 @@ import { AudioMetadata } from './types';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * DYS-Detect — Feature Vector Extraction
+ * Geronimo Éclaireur — Feature Vector Extraction
  * ═══════════════════════════════════════════════════════════════════════
  *
  * Extracts OBJECTIVE, MEASURABLE variables from text, audio, and images.

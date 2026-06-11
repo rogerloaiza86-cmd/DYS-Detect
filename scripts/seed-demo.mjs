@@ -894,7 +894,7 @@ const LABELS = [
 // ── Insertion ────────────────────────────────────────────────────────────────
 
 async function seed() {
-  console.log('DYS-Detect -- Insertion des donnees de demonstration\n');
+  console.log('Geronimo Éclaireur -- Insertion des donnees de demonstration\n');
 
   // Safety check: only delete rows with demo IDs
   const studentIds = STUDENTS.map(s => s.id);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { getStudents, getResults, getDiagnosticLabels } from '@/lib/store';
+import { authFetch } from '@/lib/auth';
 import { extractTextFeatures, extractAudioFeatures, mergeFeatures, FeatureVector, FEATURE_LABELS } from '@/lib/features';
 import { Student, AnalysisResult, DiagnosticLabel, DisorderCategory } from '@/lib/types';
 import { exportAnalysesCSV } from '@/lib/export-csv';
@@ -101,13 +102,13 @@ export default function ResearchPage() {
   const handleExport = async (format: 'csv' | 'jsonl') => {
     setExporting(true);
     try {
-      const res = await fetch(`/api/export-training-data?format=${format}`);
+      const res = await authFetch(`/api/export-training-data?format=${format}`);
       if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `dys-detect-training-${new Date().toISOString().slice(0, 10)}.${format}`;
+      a.download = `geronimo-training-${new Date().toISOString().slice(0, 10)}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -222,7 +223,7 @@ export default function ResearchPage() {
             Matrice de comparaison des variables
           </h2>
           <p className="text-sm text-on-surface-variant mt-1">
-            Moyenne de chaque variable par groupe d'orientation. Les écarts significatifs révèlent les indicateurs discriminants.
+            Moyenne de chaque variable par groupe d’orientation. Les écarts significatifs révèlent les indicateurs discriminants.
           </p>
         </div>
 

@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AudioRecorder from '@/components/AudioRecorder';
 import { getStudents, createStudent, saveResult, getResultById } from '@/lib/store';
+import { authFetch } from '@/lib/auth';
 import { Student, AnalysisMode, ANALYSIS_MODES, EXPRESSION_TOPICS, CONVERSATION_QUESTIONS, AudioMetadata } from '@/lib/types';
 import { TEXTS_BANK, ReferenceText, GradeLevel, TextTarget } from '@/lib/texts-bank';
 import Link from 'next/link';
@@ -63,7 +64,6 @@ function NewAnalysisContent() {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -175,7 +175,6 @@ function NewAnalysisContent() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -185,14 +184,12 @@ function NewAnalysisContent() {
   };
 
   const removeImage = () => {
-    setImageFile(null);
     setImagePreview(null);
   };
 
   const handleModeChange = (mode: AnalysisMode) => {
     setAnalysisMode(mode);
     setRecordedBlob(null);
-    setImageFile(null);
     setImagePreview(null);
     setConversationStep(0);
     setIsConversationActive(false);
@@ -222,7 +219,7 @@ function NewAnalysisContent() {
       formData.append('audio', recordedBlob);
       formData.append('studentId', selectedStudent);
 
-      const transcribeRes = await fetch('/api/transcribe', {
+      const transcribeRes = await authFetch('/api/transcribe', {
         method: 'POST',
         body: formData,
       });
@@ -238,7 +235,7 @@ function NewAnalysisContent() {
         try {
           const audioFormData = new FormData();
           audioFormData.append('audio', recordedBlob);
-          const audioRes = await fetch('/api/extract-audio-features', {
+          const audioRes = await authFetch('/api/extract-audio-features', {
             method: 'POST',
             body: audioFormData,
           });
@@ -263,7 +260,7 @@ function NewAnalysisContent() {
         : analysisMode === 'lecture_libre' ? (customReferenceText || referenceText)
         : undefined;
 
-      const analyzeRes = await fetch('/api/analyze', {
+      const analyzeRes = await authFetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -853,7 +850,7 @@ function NewAnalysisContent() {
 
       {/* Footer Actions */}
       <div className="flex justify-between items-center pt-6 mb-8 border-t border-surface-container-highest">
-        <Link href="/" className="flex items-center gap-2 text-on-surface-variant font-headline font-bold hover:text-on-surface transition-all px-4 py-2 hover:bg-surface-container-low rounded-lg">
+        <Link href="/dashboard" className="flex items-center gap-2 text-on-surface-variant font-headline font-bold hover:text-on-surface transition-all px-4 py-2 hover:bg-surface-container-low rounded-lg">
           <span className="material-symbols-outlined">arrow_back</span>
           <span>Annuler</span>
         </Link>

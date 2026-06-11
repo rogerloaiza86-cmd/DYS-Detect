@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * DYS-Detect — Reference Profiles System
+ * Geronimo Éclaireur — Reference Profiles System
  * ═══════════════════════════════════════════════════════════════════════
  *
  * Computes average feature profiles from labeled ULIS students.
@@ -11,6 +11,7 @@
  * AI gets better as you add more labeled data.
  */
 
+import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { extractTextFeatures, extractAudioFeatures, FeatureVector, FEATURE_LABELS } from './features';
 
@@ -32,16 +33,16 @@ export interface ReferenceProfile {
  * Compute reference profiles from all labeled analyses in Supabase.
  * Returns one profile per disorder group + one for "Sain" (no diagnosis).
  */
-export async function computeReferenceProfiles(): Promise<ReferenceProfile[]> {
-  // 1. Get all students
-  const { data: students } = await supabase.from('students').select('*');
+export async function computeReferenceProfiles(client: SupabaseClient = supabase): Promise<ReferenceProfile[]> {
+  // 1. Get all students (RLS : limités à l'enseignant porteur du jeton)
+  const { data: students } = await client.from('students').select('*');
   if (!students?.length) return [];
 
   // 2. Get all diagnostic labels
-  const { data: labels } = await supabase.from('diagnostic_labels').select('*');
+  const { data: labels } = await client.from('diagnostic_labels').select('*');
 
   // 3. Get all analysis results
-  const { data: results } = await supabase.from('analysis_results').select('*');
+  const { data: results } = await client.from('analysis_results').select('*');
   if (!results?.length) return [];
 
   // 4. Map student ID → disorders
@@ -174,24 +175,27 @@ export function formatProfilesForPrompt(profiles: ReferenceProfile[]): string {
 
 /**
  * Cache the profiles in memory to avoid recomputing on every analysis.
- * Refreshed every 10 minutes or on demand.
+ * Refreshed every 10 minutes or on demand. Keyed per teacher: with RLS,
+ * each teacher sees different reference data.
  */
-let cachedProfiles: ReferenceProfile[] | null = null;
-let cacheTimestamp = 0;
+const profileCache = new Map<string, { profiles: ReferenceProfile[]; timestamp: number }>();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
-export async function getReferenceProfiles(): Promise<ReferenceProfile[]> {
+export async function getReferenceProfiles(
+  client: SupabaseClient = supabase,
+  cacheKey = 'anon',
+): Promise<ReferenceProfile[]> {
   const now = Date.now();
-  if (cachedProfiles && now - cacheTimestamp < CACHE_TTL) {
-    return cachedProfiles;
+  const cached = profileCache.get(cacheKey);
+  if (cached && now - cached.timestamp < CACHE_TTL) {
+    return cached.profiles;
   }
 
-  cachedProfiles = await computeReferenceProfiles();
-  cacheTimestamp = now;
-  return cachedProfiles;
+  const profiles = await computeReferenceProfiles(client);
+  profileCache.set(cacheKey, { profiles, timestamp: now });
+  return profiles;
 }
 
 export function invalidateProfileCache(): void {
-  cachedProfiles = null;
-  cacheTimestamp = 0;
+  profileCache.clear();
 }

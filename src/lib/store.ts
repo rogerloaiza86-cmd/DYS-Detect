@@ -2,8 +2,8 @@ import { supabase } from './supabase';
 import { Student, AnalysisResult, RiskLevel, UserProfile, DiagnosticLabel } from './types';
 
 // ─── Keys localStorage (profil uniquement) ────────────────────────────────
-const PROFILE_KEY   = 'dys-detect-profile';
-const ONBOARDED_KEY = 'dys-detect-onboarded';
+const PROFILE_KEY   = 'geronimo-profile';
+const ONBOARDED_KEY = 'geronimo-onboarded';
 
 // ─── Helpers: mapping Supabase row ↔ TypeScript ───────────────────────────
 function toStudent(row: Record<string, unknown>): Student {

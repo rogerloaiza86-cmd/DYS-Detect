@@ -1,4 +1,4 @@
-// ─── Banque de textes de référence DYS-Detect ────────────────────────────
+// ─── Banque de textes de référence Geronimo Éclaireur ────────────────────────────
 
 export type TextDifficulty = 'facile' | 'moyen' | 'difficile';
 export type TextTarget = 'DYS' | 'TDAH' | 'TSA' | 'general';
@@ -280,6 +280,19 @@ export const TEXTS_BANK: ReferenceText[] = [
     wordCount: 65,
     phonologicalFeatures: ['sons_complexes_an_in_ou', 'groupes_consonantiques_tr_pr_str', 'discours_direct'],
     notes: 'Fable classique adaptée avec morale implicite. Évalue la compréhension du second degré et de la causalité (TSA) et la cohérence narrative (TDAH).',
+  },
+
+  // ── Collège · 4e ──────────────────────────────────────────────────────────
+  {
+    id: '4eme-01',
+    title: 'L\'expédition polaire',
+    text: 'L\'expédition progressait lentement sur la banquise, malgré le blizzard qui réduisait la visibilité à quelques mètres. Les scientifiques, épuisés par trois semaines de marche, transportaient des instruments de mesure indispensables à leurs recherches sur le réchauffement climatique. Chaque prélèvement de glace constituait un témoignage précieux : les bulles d\'air emprisonnées depuis des millénaires révéleraient la composition de l\'atmosphère ancienne. Pourtant, une inquiétude sourde accompagnait leurs découvertes, car les fissures s\'élargissaient d\'année en année.',
+    gradeLevel: ['4eme'],
+    difficulty: 'difficile',
+    targets: ['DYS', 'general'],
+    wordCount: 78,
+    phonologicalFeatures: ['mots_polysyllabiques', 'groupes_consonantiques_complexes', 'subordonnees_imbriquees', 'lexique_abstrait'],
+    notes: 'Texte documentaire exigeant pour 4e : lexique scientifique, phrases longues à subordonnées. Révèle les difficultés de décodage persistantes chez les grands lecteurs (dyslexie compensée).',
   },
 ];
 

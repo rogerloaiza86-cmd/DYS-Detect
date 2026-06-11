@@ -70,7 +70,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                     <span className="text-xs font-headline font-bold tracking-widest uppercase">Outil d'aide au repérage précoce</span>
                   </div>
                   <h1 className="font-headline font-black text-4xl leading-tight mb-4">
-                    Bienvenue sur<br />DYS-Detect
+                    Bienvenue sur<br />Geronimo Éclaireur
                   </h1>
                   <p className="font-body text-on-primary/80 text-lg leading-relaxed">
                     La plateforme d'aide au repérage et à l'orientation des troubles d'apprentissage (DYS, TDAH, TSA) vers les professionnels compétents.

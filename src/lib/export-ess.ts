@@ -98,7 +98,7 @@ export function exportESS(
 
   const lines: string[] = [
     'ÉQUIPE DE SUIVI DE SCOLARISATION (ESS)',
-    "Document généré par DYS-Detect — Outil d'aide au repérage précoce",
+    "Document généré par Geronimo Éclaireur — Outil d'aide au repérage précoce",
     `Date : ${today}`,
     '',
     sep,
@@ -125,7 +125,7 @@ export function exportESS(
     lines.push('', sep, '');
   }
 
-  // Section 3 : résultats DYS-Detect
+  // Section 3 : résultats Geronimo Éclaireur
   lines.push(
     "3. RÉSULTATS DE L'ANALYSE DYS-DETECT",
     `Date d'analyse : ${analysisDate}`,

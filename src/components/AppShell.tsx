@@ -9,7 +9,7 @@ import { Student, UserProfile } from '@/lib/types';
 import OnboardingModal from '@/components/OnboardingModal';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/dashboard', label: 'Tableau de bord', icon: 'dashboard' },
   { href: '/new-analysis', label: 'Nouvelle Analyse', icon: 'mic' },
   { href: '/students', label: 'Élèves', icon: 'groups' },
   { href: '/research', label: 'Recherche', icon: 'science' },
@@ -37,7 +37,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     getStudents().then(setAllStudents);
 
     // Dark mode
-    const saved = localStorage.getItem('dys-detect-dark-mode');
+    const saved = localStorage.getItem('geronimo-dark-mode');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const dark = saved !== null ? saved === 'true' : prefersDark;
     setIsDarkMode(dark);
@@ -47,7 +47,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Apply dark class on toggle
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
-    localStorage.setItem('dys-detect-dark-mode', String(isDarkMode));
+    localStorage.setItem('geronimo-dark-mode', String(isDarkMode));
   }, [isDarkMode]);
 
   // Close sidebar on route change (mobile)
@@ -127,14 +127,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ── SideNavBar ───────────────────────────────────────── */}
       <aside className={`fixed inset-y-0 left-0 w-64 flex flex-col p-6 gap-8 bg-surface-container-low border-r border-outline-variant/10 z-50 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="flex flex-col gap-1">
-          <h1 className="font-headline font-extrabold text-2xl bg-gradient-to-br from-primary to-primary-container bg-clip-text text-transparent">DYS-Detect</h1>
-          <p className="font-headline text-xs text-on-surface-variant tracking-wider uppercase opacity-70">The Empathetic Path</p>
-        </div>
+        <Link href="/" className="flex flex-col gap-1">
+          <h1 className="font-headline text-2xl text-primary flex items-center gap-1.5">
+            Geronimo
+            <span className="text-accent" aria-hidden="true">★</span>
+          </h1>
+          <p className="font-label text-xs text-on-surface-variant tracking-wider uppercase opacity-70">L’éclaireur de l’école inclusive</p>
+        </Link>
 
         <nav className="flex flex-col gap-2 mt-4">
           {navItems.map(item => {
-            const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+            const isActive = pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -169,7 +172,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           <Link
             href="/new-analysis"
-            className="block w-full text-center py-4 bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold rounded-xl shadow-lg hover:scale-[1.02] transition-all duration-200 active:scale-95"
+            className="block w-full text-center py-4 bg-primary text-on-primary font-headline font-bold rounded-full shadow-lg hover:bg-primary-dim hover:scale-[1.02] transition-all duration-200 active:scale-95"
           >
             Démarrer Analyse
           </Link>

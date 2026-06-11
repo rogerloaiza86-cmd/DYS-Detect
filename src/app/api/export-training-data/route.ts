@@ -126,7 +126,7 @@ export async function GET(request: Request) {
       return new NextResponse(csv, {
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
-          'Content-Disposition': `attachment; filename="dys-detect-training-${new Date().toISOString().slice(0, 10)}.csv"`,
+          'Content-Disposition': `attachment; filename="geronimo-training-${new Date().toISOString().slice(0, 10)}.csv"`,
         },
       });
     }
@@ -136,7 +136,7 @@ export async function GET(request: Request) {
     return new NextResponse(jsonl, {
       headers: {
         'Content-Type': 'application/jsonl; charset=utf-8',
-        'Content-Disposition': `attachment; filename="dys-detect-training-${new Date().toISOString().slice(0, 10)}.jsonl"`,
+        'Content-Disposition': `attachment; filename="geronimo-training-${new Date().toISOString().slice(0, 10)}.jsonl"`,
       },
     });
 

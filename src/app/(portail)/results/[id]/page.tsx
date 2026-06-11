@@ -47,7 +47,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         <span className="material-symbols-outlined text-error text-6xl shadow-sm">error</span>
         <h2 className="text-3xl font-headline font-bold text-on-surface">Résultat introuvable</h2>
         <p className="text-on-surface-variant font-body text-lg">Cette analyse n&apos;existe pas ou a été supprimée.</p>
-        <Link href="/" className="mt-6 flex items-center gap-3 bg-primary text-on-primary px-8 py-4 rounded-xl font-headline font-bold hover:bg-primary-dim transition-colors shadow-lg hover:scale-105 active:scale-95">
+        <Link href="/dashboard" className="mt-6 flex items-center gap-3 bg-primary text-on-primary px-8 py-4 rounded-xl font-headline font-bold hover:bg-primary-dim transition-colors shadow-lg hover:scale-105 active:scale-95">
           <span className="material-symbols-outlined">arrow_back</span>
           Retour au tableau de bord
         </Link>
@@ -192,7 +192,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div className="space-y-2">
           <div className="flex items-center gap-4 mb-4 flex-wrap">
-            <Link href="/" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-headline font-bold text-sm">
+            <Link href="/dashboard" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-headline font-bold text-sm">
               <span className="material-symbols-outlined text-sm">arrow_back</span>
               Dashboard
             </Link>

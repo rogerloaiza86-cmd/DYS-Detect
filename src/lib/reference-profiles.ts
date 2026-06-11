@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * DYS-Detect — Reference Profiles System
+ * Geronimo Éclaireur — Reference Profiles System
  * ═══════════════════════════════════════════════════════════════════════
  *
  * Computes average feature profiles from labeled ULIS students.

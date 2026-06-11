@@ -80,12 +80,12 @@ export default function HelpPage() {
     <div className="max-w-4xl mx-auto pb-12">
       {/* Header */}
       <div className="mb-10">
-        <Link href="/" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary font-headline font-bold text-sm mb-6 transition-colors">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary font-headline font-bold text-sm mb-6 transition-colors">
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           Tableau de bord
         </Link>
         <h1 className="font-headline font-black text-4xl text-on-surface tracking-tight mb-3">Centre d&apos;aide</h1>
-        <p className="text-on-surface-variant font-body text-lg">Tout ce que vous devez savoir pour utiliser DYS-Detect.</p>
+        <p className="text-on-surface-variant font-body text-lg">Tout ce que vous devez savoir pour utiliser Geronimo Éclaireur.</p>
       </div>
 
       {/* Quick links */}
@@ -94,7 +94,7 @@ export default function HelpPage() {
           { icon: 'school', label: 'Démarrer', href: '/new-analysis', color: 'bg-primary/10 text-primary hover:bg-primary hover:text-on-primary' },
           { icon: 'groups', label: 'Mes élèves', href: '/students', color: 'bg-secondary/10 text-secondary hover:bg-secondary hover:text-on-secondary' },
           { icon: 'dashboard', label: 'Dashboard', href: '/', color: 'bg-tertiary/10 text-tertiary hover:bg-tertiary hover:text-on-tertiary' },
-          { icon: 'mail', label: 'Contact', href: 'mailto:contact@dys-detect.fr', color: 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high' },
+          { icon: 'mail', label: 'Contact', href: 'mailto:contact@geronimo.fr', color: 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high' },
         ].map(item => (
           <Link
             key={item.label}
@@ -165,7 +165,7 @@ export default function HelpPage() {
         <span className="material-symbols-outlined text-4xl text-primary mb-3 block" style={{ fontVariationSettings: "'FILL' 1" }}>support_agent</span>
         <h3 className="font-headline font-bold text-on-surface text-xl mb-2">Prêt à analyser ?</h3>
         <p className="text-on-surface-variant font-body text-sm mb-6">
-          DYS-Detect est un outil d'aide au repérage précoce. Les indicateurs générés orientent vers les professionnels compétents — ils ne constituent pas une évaluation clinique.
+          Geronimo Éclaireur est un outil d'aide au repérage précoce. Les indicateurs générés orientent vers les professionnels compétents — ils ne constituent pas une évaluation clinique.
         </p>
         <Link href="/new-analysis" className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-on-primary rounded-xl font-headline font-bold hover:bg-primary-dim transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-primary/20">
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>mic</span>

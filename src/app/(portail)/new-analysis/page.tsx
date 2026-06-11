@@ -853,7 +853,7 @@ function NewAnalysisContent() {
 
       {/* Footer Actions */}
       <div className="flex justify-between items-center pt-6 mb-8 border-t border-surface-container-highest">
-        <Link href="/" className="flex items-center gap-2 text-on-surface-variant font-headline font-bold hover:text-on-surface transition-all px-4 py-2 hover:bg-surface-container-low rounded-lg">
+        <Link href="/dashboard" className="flex items-center gap-2 text-on-surface-variant font-headline font-bold hover:text-on-surface transition-all px-4 py-2 hover:bg-surface-container-low rounded-lg">
           <span className="material-symbols-outlined">arrow_back</span>
           <span>Annuler</span>
         </Link>

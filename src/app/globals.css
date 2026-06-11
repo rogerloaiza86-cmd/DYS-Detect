@@ -1,47 +1,65 @@
 @import "tailwindcss";
 
-@theme {
-  --color-primary: #0060ad;
-  --color-primary-dim: #005498;
-  --color-primary-container: #68abff;
-  --color-on-primary: #f8f8ff;
-  --color-on-primary-container: #002b52;
-  
-  --color-secondary: #006b5e;
-  --color-secondary-dim: #005e52;
-  --color-secondary-container: #93f4e0;
-  --color-on-secondary: #e3fff7;
-  --color-on-secondary-container: #005d51;
-  
-  --color-tertiary: #69558e;
-  --color-tertiary-dim: #5c4981;
-  --color-tertiary-container: #d6beff;
-  --color-on-tertiary: #fef7ff;
-  --color-on-tertiary-container: #4b386e;
-  
-  --color-error: #a83836;
-  --color-error-dim: #67040d;
-  --color-error-container: #fa746f;
-  --color-on-error: #fff7f6;
-  --color-on-error-container: #6e0a12;
-  
-  --color-surface: #f8f9fa;
-  --color-surface-dim: #d5dbdd;
-  --color-surface-bright: #f8f9fa;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f1f4f5;
-  --color-surface-container: #ebeef0;
-  --color-surface-container-high: #e5e9eb;
-  --color-surface-container-highest: #dee3e6;
-  --color-on-surface: #2d3335;
-  --color-on-surface-variant: #5a6062;
-  
-  --color-outline: #767c7e;
-  --color-outline-variant: #adb3b5;
+/* ─── Charte graphique Geronimo Éclaireur v1.0 ──────────────────
+   Marine Geronimo #17314A · Or Boussole #F4B942 · Crème Papier #F7F3EC
+   Accents : Corail Lien #E87A5D · Vert Sauge #7FA99B · Prune Douce #6B5B8A
+   Règle de l'éclaireur : 60% marine / 28% crème / 12% or          */
 
-  --font-headline: var(--font-lexend), sans-serif;
-  --font-body: var(--font-inter), sans-serif;
-  --font-label: var(--font-inter), sans-serif;
+@theme {
+  /* Primary · Marine Geronimo */
+  --color-primary: #17314a;
+  --color-primary-dim: #102338;
+  --color-primary-container: #3d5a7a;
+  --color-on-primary: #f7f3ec;
+  --color-on-primary-container: #f7f3ec;
+
+  /* Accent · Or Boussole (étoile) */
+  --color-accent: #f4b942;
+  --color-accent-dim: #d99e23;
+  --color-accent-container: #fbe3ae;
+  --color-on-accent: #17314a;
+  --color-on-accent-container: #4a3508;
+
+  /* Secondary · Vert Sauge (enseignants / statut sain) */
+  --color-secondary: #4f7a6b;
+  --color-secondary-dim: #3f6356;
+  --color-secondary-container: #c2d9d0;
+  --color-on-secondary: #f7f3ec;
+  --color-on-secondary-container: #27443a;
+
+  /* Tertiary · Prune Douce (enfants / risque modéré) */
+  --color-tertiary: #6b5b8a;
+  --color-tertiary-dim: #574874;
+  --color-tertiary-container: #d4c9e6;
+  --color-on-tertiary: #f7f3ec;
+  --color-on-tertiary-container: #44345f;
+
+  /* Error · Corail Lien assombri (risque élevé / familles) */
+  --color-error: #b5492f;
+  --color-error-dim: #93351f;
+  --color-error-container: #e87a5d;
+  --color-on-error: #fdf3ef;
+  --color-on-error-container: #6e2412;
+
+  /* Neutres · Crème Papier */
+  --color-surface: #f7f3ec;
+  --color-surface-dim: #e7e0d2;
+  --color-surface-bright: #f7f3ec;
+  --color-surface-container-lowest: #fffdf9;
+  --color-surface-container-low: #f2ecdf;
+  --color-surface-container: #ece4d4;
+  --color-surface-container-high: #e5dcc8;
+  --color-surface-container-highest: #ded3bc;
+  --color-on-surface: #17314a;
+  --color-on-surface-variant: #51606f;
+
+  --color-outline: #75808c;
+  --color-outline-variant: #b3aea1;
+
+  /* Typo · Fraunces pour la voix, Figtree pour l'information */
+  --font-headline: var(--font-fraunces), serif;
+  --font-body: var(--font-figtree), sans-serif;
+  --font-label: var(--font-figtree), sans-serif;
 }
 
 @layer base {
@@ -60,44 +78,50 @@
       'opsz' 24;
   }
 
-  /* ── Dark mode overrides ─────────────────────────────────── */
+  /* ── Dark mode : nuit marine, étoile d'or (AAA sur marine) ── */
   html.dark {
-    --color-primary: #9ecaff;
-    --color-primary-dim: #7ab8ff;
-    --color-primary-container: #004880;
-    --color-on-primary: #003258;
-    --color-on-primary-container: #d1e4ff;
+    --color-primary: #f4b942;
+    --color-primary-dim: #d99e23;
+    --color-primary-container: #6e5314;
+    --color-on-primary: #17314a;
+    --color-on-primary-container: #fbe3ae;
 
-    --color-secondary: #4ddcc7;
-    --color-secondary-dim: #3abfac;
-    --color-secondary-container: #00504a;
-    --color-on-secondary: #003731;
-    --color-on-secondary-container: #6ff8e3;
+    --color-accent: #f4b942;
+    --color-accent-dim: #d99e23;
+    --color-accent-container: #6e5314;
+    --color-on-accent: #17314a;
+    --color-on-accent-container: #fbe3ae;
 
-    --color-tertiary: #d9bee4;
-    --color-tertiary-dim: #c4a9cf;
-    --color-tertiary-container: #553d6a;
-    --color-on-tertiary: #3d2751;
-    --color-on-tertiary-container: #f5daff;
+    --color-secondary: #9fc4b6;
+    --color-secondary-dim: #7fa99b;
+    --color-secondary-container: #33524a;
+    --color-on-secondary: #122a23;
+    --color-on-secondary-container: #c2d9d0;
 
-    --color-error: #ffb4ab;
-    --color-error-dim: #e29087;
-    --color-error-container: #93000a;
-    --color-on-error: #690005;
-    --color-on-error-container: #ffdad6;
+    --color-tertiary: #c3b3dd;
+    --color-tertiary-dim: #a991c6;
+    --color-tertiary-container: #4f3f6e;
+    --color-on-tertiary: #2c2042;
+    --color-on-tertiary-container: #e3daf1;
 
-    --color-surface: #131618;
-    --color-surface-dim: #0e1012;
-    --color-surface-bright: #36393b;
-    --color-surface-container-lowest: #0e1012;
-    --color-surface-container-low: #1a1d1f;
-    --color-surface-container: #1e2224;
-    --color-surface-container-high: #292c2e;
-    --color-surface-container-highest: #333638;
-    --color-on-surface: #e2e3e5;
-    --color-on-surface-variant: #c1c8ca;
+    --color-error: #f0a18b;
+    --color-error-dim: #e87a5d;
+    --color-error-container: #7e2c17;
+    --color-on-error: #481204;
+    --color-on-error-container: #fbd9cf;
 
-    --color-outline: #8b9396;
-    --color-outline-variant: #41484b;
+    --color-surface: #0e1c2c;
+    --color-surface-dim: #0a1521;
+    --color-surface-bright: #2b425c;
+    --color-surface-container-lowest: #0a1521;
+    --color-surface-container-low: #142536;
+    --color-surface-container: #182b3f;
+    --color-surface-container-high: #1f3449;
+    --color-surface-container-highest: #274057;
+    --color-on-surface: #ece7dc;
+    --color-on-surface-variant: #b8c2cc;
+
+    --color-outline: #8595a5;
+    --color-outline-variant: #3a4f64;
   }
 }

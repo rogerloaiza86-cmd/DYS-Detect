@@ -1,4 +1,4 @@
-// ─── Banque de textes de référence DYS-Detect ────────────────────────────
+// ─── Banque de textes de référence Geronimo Éclaireur ────────────────────────────
 
 export type TextDifficulty = 'facile' | 'moyen' | 'difficile';
 export type TextTarget = 'DYS' | 'TDAH' | 'TSA' | 'general';

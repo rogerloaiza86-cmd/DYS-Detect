@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Geronimo Éclaireur ★
 
-## Getting Started
+> L'éclaireur bienveillant de l'école inclusive — « Aucun enfant n'avance seul. »
 
-First, run the development server:
+Geronimo est un atelier pédagogique d'aide au **repérage précoce** des troubles
+DYS, TDAH et TSA, destiné aux enseignants et aux équipes éducatives. L'élève lit,
+raconte ou converse ; Geronimo analyse la voix, la transcription et l'écriture
+manuscrite pour produire des **indicateurs d'orientation** et des pistes
+pédagogiques concrètes.
+
+⚠️ **Geronimo éclaire, il ne diagnostique pas.** Les indicateurs générés ne
+constituent pas une évaluation clinique et ne remplacent jamais l'avis d'un
+professionnel de santé (orthophoniste, neuropsychologue, médecin).
+
+## Stack
+
+- **Next.js 16** (App Router) · React 19 · TypeScript strict · Tailwind CSS v4
+- **Gemini 2.0 Flash** — transcription audio + extraction prosodique
+- **Claude Sonnet** — analyse multimodale des marqueurs DYS / TDAH (3 sous-profils) / TSA
+- **Supabase** — élèves, résultats d'analyses, labels diagnostiques, audit RGPD
+- recharts (radar, longitudinal) · jspdf + html2canvas (rapports PDF)
+
+## Démarrage
 
 ```bash
+npm install
+cp .env.example .env.local   # renseigner les clés API
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Sans clés API, l'application fonctionne en mode démonstration (données mock).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/` — page d'accueil publique (charte Geronimo v1.0)
+- `/dashboard` — portail enseignant (stats, élèves récents)
+- `/new-analysis` — analyse multimodale (4 modes : dictée, lecture, expression, conversation)
+- `/students` — gestion des élèves, historique longitudinal
+- `/results/[id]` — résultats détaillés, radar, export PDF
+- `/research` — agrégats anonymisés et exports d'entraînement (consentement requis)
 
-## Learn More
+## Charte graphique
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Marine Geronimo `#17314A` · Or Boussole `#F4B942` · Crème Papier `#F7F3EC` —
+typographies **Fraunces** (voix) et **Figtree** (information). Voir `AUDIT.md`
+pour l'état du projet et la feuille de route.

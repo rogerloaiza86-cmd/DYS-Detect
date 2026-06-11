@@ -107,7 +107,7 @@ export function exportAnalysesCSV(results: AnalysisResult[], students: Student[]
   const a = document.createElement('a');
   a.href = url;
   const dateSlug = new Date().toISOString().slice(0, 10);
-  a.download = `DYS-Detect_analyses_recherche_${dateSlug}.csv`;
+  a.download = `Geronimo_analyses_recherche_${dateSlug}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

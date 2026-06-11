@@ -45,7 +45,7 @@ export const exportToPDF = async (elementId: string, filename: string) => {
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(22);
     pdf.setTextColor(25, 127, 230); // Primary color
-    pdf.text("Rapport d'Orientation — DYS-Detect", 15, 20);
+    pdf.text("Rapport d'Orientation — Geronimo Éclaireur", 15, 20);
 
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(10);

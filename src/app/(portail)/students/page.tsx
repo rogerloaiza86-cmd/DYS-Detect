@@ -134,7 +134,7 @@ export default function StudentsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <Link href="/" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary font-headline font-bold text-sm mb-3 transition-colors">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary font-headline font-bold text-sm mb-3 transition-colors">
             <span className="material-symbols-outlined text-sm">arrow_back</span>
             Tableau de bord
           </Link>
